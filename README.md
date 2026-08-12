@@ -82,7 +82,6 @@ DokanBhai is purpose-built for the following Bangladeshi physical retail vertica
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd DokanVy_webapp
 
 # Install dependencies
 npm install
