@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', 'Hind Siliguri', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f7fa;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbars on the side rail */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 6px;
+}
+
+/* Receipt / thermal printer styles */
+#receipt-print {
+  font-family: 'Courier New', monospace;
+  width: 80mm;
+}
+#receipt-print[data-width="58"] {
+  width: 58mm;
+}
+#receipt-print[data-width="58"] table,
+#receipt-print[data-width="58"] .text-xs {
+  font-size: 10px;
+}
+#receipt-print[data-width="58"] .text-\[10px\] {
+  font-size: 9px;
+}
+
+@media print {
+  @page { size: auto; margin: 0; }
+  body * { visibility: hidden; }
+  #receipt-print, #receipt-print * { visibility: visible; }
+  #receipt-print {
+    position: absolute;
+    left: 0; top: 0;
+    width: 80mm;
+    padding: 4mm;
+    background: white;
+    color: black;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+  #receipt-print[data-width="58"] {
+    width: 58mm;
+    font-size: 10px;
+  }
+  #receipt-print[data-width="58"] table,
+  #receipt-print[data-width="58"] .text-xs {
+    font-size: 10px;
+  }
+  #receipt-print[data-width="58"] .text-\[10px\] {
+    font-size: 9px;
+  }
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* Smooth focus rings */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  ring: 2px;
+  box-shadow: 0 0 0 3px rgba(15, 157, 88, 0.25);
+}
