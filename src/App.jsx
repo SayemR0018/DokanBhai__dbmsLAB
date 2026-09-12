@@ -31,7 +31,7 @@ function Protected({ children }) {
 }
 
 export default function App() {
-  const { profile, complete } = useProfile()
+  const { profile, complete, setProfile: setProfileCtx } = useProfile()
 
   // First launch: block on onboarding modal until profile is complete.
   if (!profile || !complete) {
@@ -41,7 +41,10 @@ export default function App() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-steel-50" />
         <OnboardingModal
           onComplete={(payload) => {
-            // Set profile + seed the vertical catalog via data.setProfile.
+            // Update context + seed the vertical catalog via data.setProfile.
+            // setProfileCtx synchronously flips `complete` so the <Routes />
+            // tree renders immediately without waiting for the storage event.
+            setProfileCtx(payload)
             data.setProfile(payload)
           }}
         />

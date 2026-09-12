@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Modal, Button, Input, Field } from './ui'
 import BusinessTypeChips from './BusinessTypeChips'
 
 export default function OnboardingModal({ onComplete }) {
+  const navigate = useNavigate()
   const [storeName, setStoreName] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [region, setRegion] = useState('')
@@ -31,9 +33,13 @@ export default function OnboardingModal({ onComplete }) {
         businessType,
         phone: phone.trim(),
       })
+      // Profile is now complete — the App-level guard will render <Routes />.
+      // Explicitly route to the dashboard so users (including ones who land
+      // on a deep link like /pos or /inventory before finishing setup) get
+      // sent to a sensible landing page instead of being trapped here.
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err?.message || 'Failed to save')
-    } finally {
       setSubmitting(false)
     }
   }
