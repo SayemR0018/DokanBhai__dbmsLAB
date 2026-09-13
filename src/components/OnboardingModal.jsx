@@ -2,9 +2,68 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Modal, Button, Input, Field } from './ui'
 import BusinessTypeChips from './BusinessTypeChips'
+import { getSupabase, isSupabaseConfigured } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
-export default function OnboardingModal({ onComplete }) {
+// Normalize a Bangladesh mobile number to the 01XXXXXXXXX 11-digit form.
+const normalizePhone = (raw) => (raw || '').replace(/\D/g, '').slice(0, 11)
+
+// Best-effort upload to the Supabase cloud tables. We deliberately wrap each
+// upsert in its own try/catch so a missing/optional table (e.g. `businesses`)
+// doesn't prevent the local profile from being saved and the user from
+// reaching the dashboard. Failures are logged so they are visible in
+// developer tools but never block the user.
+async function persistToSupabase({ cleanPhone, storeName, ownerName, region, businessType }) {
+  if (!isSupabaseConfigured) return { ok: true, skipped: true }
+  const supabase = getSupabase()
+  if (!supabase) return { ok: true, skipped: true }
+
+  const errors = []
+  try {
+    const { error } = await supabase.from('businesses').upsert(
+      {
+        id: cleanPhone,
+        name: storeName,
+        business_type: businessType,
+        owner_user_id: cleanPhone,
+        address: region,
+        phone: cleanPhone,
+      },
+      { onConflict: 'id' }
+    )
+    if (error) errors.push('businesses: ' + error.message)
+  } catch (err) {
+    errors.push('businesses: ' + (err?.message || err))
+  }
+
+  try {
+    const { error } = await supabase.from('dokan_profile').upsert(
+      {
+        id: cleanPhone,
+        schema_version: 1,
+        store_name: storeName,
+        owner_name: ownerName,
+        region,
+        business_type: businessType,
+        session_phone: cleanPhone,
+        currency: 'BDT',
+        receipt_width: '80mm',
+        locale: 'bn-BD',
+      },
+      { onConflict: 'id' }
+    )
+    if (error) errors.push('dokan_profile: ' + error.message)
+  } catch (err) {
+    errors.push('dokan_profile: ' + (err?.message || err))
+  }
+
+  if (errors.length) console.warn('[onboarding] Supabase persist warnings:', errors)
+  return { ok: true, warnings: errors }
+}
+
+export default function OnboardingModal({ onComplete, onClose }) {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [storeName, setStoreName] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [region, setRegion] = useState('')
@@ -19,27 +78,53 @@ export default function OnboardingModal({ onComplete }) {
     if (!storeName.trim()) return setError('দোকানের নাম দিন / Please enter store name')
     if (!ownerName.trim()) return setError('মালিকের নাম দিন / Please enter owner name')
     if (!region.trim()) return setError('এলাকা / জেলা দিন / Please enter region or district')
-    if (!phone.trim() || !/^01[3-9]\d{8}$/.test(phone.trim())) {
+    const cleanPhone = normalizePhone(phone)
+    if (!cleanPhone || !/^01[3-9]\d{8}$/.test(cleanPhone)) {
       return setError('সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX) / Enter a valid BD mobile number')
     }
     if (!businessType) return setError('ব্যবসার ধরন বেছে নিন / Choose a business type')
 
     setSubmitting(true)
     try {
-      await onComplete({
+      // 1. Upload to Supabase (best-effort, never blocks).
+      await persistToSupabase({
+        cleanPhone,
         storeName: storeName.trim(),
         ownerName: ownerName.trim(),
         region: region.trim(),
         businessType,
-        phone: phone.trim(),
       })
-      // Profile is now complete — the App-level guard will render <Routes />.
-      // Explicitly route to the dashboard so users (including ones who land
-      // on a deep link like /pos or /inventory before finishing setup) get
-      // sent to a sensible landing page instead of being trapped here.
+
+      // 2. Save to the local profile context — this also flips `complete`
+      //    in ProfileContext so <App /> can render the real route tree.
+      const payload = {
+        storeName: storeName.trim(),
+        ownerName: ownerName.trim(),
+        region: region.trim(),
+        businessType,
+        phone: cleanPhone,
+      }
+      if (typeof onComplete === 'function') {
+        await onComplete(payload)
+      }
+
+      // 3. Mark this device as trusted (writes dokanbhai-auth-session) so the
+      //    user lands on the dashboard as a logged-in owner instead of being
+      //    bounced back to /login.
+      const res = await login(cleanPhone)
+      if (!res.ok) {
+        // Non-fatal: the profile is saved, but we still surface the auth
+        // error so the user knows why they may be asked to sign in again.
+        console.warn('[onboarding] auto-login failed:', res.error)
+      }
+
+      // 4. Close the modal (if a parent is still gating on open) and route
+      //    the user to the dashboard.
+      onClose?.()
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(err?.message || 'Failed to save')
+      console.error('[onboarding] save failed:', err)
+      setError(err?.message || 'সেটআপ ব্যর্থ / Setup failed')
       setSubmitting(false)
     }
   }
@@ -47,7 +132,7 @@ export default function OnboardingModal({ onComplete }) {
   return (
     <Modal
       open
-      onClose={() => {}}
+      onClose={() => { /* onboarding cannot be dismissed mid-setup */ }}
       title="স্বাগতম! আপনার দোকান সেট আপ করুন"
       size="lg"
     >
@@ -98,7 +183,7 @@ export default function OnboardingModal({ onComplete }) {
         </Field>
 
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-medium">
             {error}
           </div>
         )}

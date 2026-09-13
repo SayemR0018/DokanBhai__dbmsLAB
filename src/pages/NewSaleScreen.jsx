@@ -7,7 +7,7 @@ import {
   PlusIcon, MinusIcon, SearchIcon, TrashIcon, XIcon, CheckIcon, UsersIcon, PackageIcon, MoneyIcon, ReceiptIcon, PrintIcon,
 } from '../components/icons'
 import { formatBDT, formatDateTime, formatQty, initials, avatarColor } from '../lib/format'
-import { stepFor, decimalsFor, normalizeUnitKey, getUnit } from '../lib/units'
+import { stepFor, decimalsFor, normalizeUnitKey, getUnit, roundQty } from '../lib/units'
 
 export default function NewSaleScreen() {
   const navigate = useNavigate()
@@ -31,7 +31,15 @@ export default function NewSaleScreen() {
   const load = async () => {
     setLoading(true)
     const [p, c, cat] = await Promise.all([data.list('products'), data.list('customers'), data.list('categories')])
-    setProducts(p.map((x) => ({ ...x, unit: normalizeUnitKey(x.unit) })))
+    // Coerce stock / prices to numbers up-front so cart math never sees NaN.
+    setProducts(p.map((x) => ({
+      ...x,
+      unit: normalizeUnitKey(x.unit),
+      stock: Number(x.stock || 0),
+      min_stock: Number(x.min_stock || 0),
+      cost_price: Number(x.cost_price || 0),
+      sale_price: Number(x.sale_price || 0),
+    })))
     setCustomers(c); setCategories(cat)
     setLoading(false)
   }
@@ -48,20 +56,31 @@ export default function NewSaleScreen() {
   const change = useMemo(() => Math.max(0, Number(paid || 0) - total), [paid, total])
 
   const addToCart = (p) => {
+    // `p.stock` has already been coerced to Number() in `load()` above. We
+    // also defensively re-coerce here in case the caller is a Supabase row
+    // that bypassed the loader (e.g. an out-of-band `data.insert` followed
+    // by an immediate add).
+    const stock = Number(p.stock || 0)
+    const salePrice = Number(p.sale_price || 0)
+    if (!Number.isFinite(stock) || stock <= 0) return
     setCart((c) => {
       const existing = c.find((i) => i.product_id === p.id)
       if (existing) {
-        if (existing.qty + stepFor(existing.unit) > p.stock) return c
-        return c.map((i) => i.product_id === p.id ? { ...i, qty: Number((i.qty + stepFor(i.unit)).toFixed(decimalsFor(i.unit) + 2)) } : i)
+        const step = stepFor(existing.unit)
+        const candidate = roundQty(Number(existing.qty || 0) + step, existing.unit)
+        if (!Number.isFinite(candidate) || candidate > stock) return c
+        return c.map((i) => i.product_id === p.id ? { ...i, qty: candidate } : i)
       }
-      if (p.stock <= 0) return c
+      // Initial qty respects the unit's step (1 for pcs, 0.001 for kg, etc.)
+      // so we never start the cart with a fractional piece.
+      const initialQty = roundQty(stepFor(p.unit), p.unit)
       return [...c, {
         product_id: p.id,
         name: p.name,
-        unit_price: p.sale_price,
-        qty: 1,
+        unit_price: salePrice,
+        qty: initialQty,
         unit: p.unit,
-        stock: p.stock,
+        stock,
         serialTracked: !!p.serialTracked,
         warrantyMonths: Number(p.warrantyMonths || 0),
         serialNumber: '',
@@ -73,11 +92,20 @@ export default function NewSaleScreen() {
   const updateQty = (id, delta) => {
     setCart((c) => c.flatMap((i) => {
       if (i.product_id !== id) return [i]
+      // Coerce + round through units.js so fractional units (kg, cft, ltr)
+      // never drift into NaN or exceed the unit's decimals.
       const step = stepFor(i.unit)
-      const nq = Number((i.qty + delta).toFixed(decimalsFor(i.unit) + 2))
-      if (nq <= 0) return []
-      if (nq > i.stock) return [i]
-      return [{ ...i, qty: nq }]
+      const decimals = decimalsFor(i.unit)
+      const stock = Number(i.stock || 0)
+      const candidate = roundQty(Number(i.qty || 0) + Number(delta || 0), i.unit)
+      if (!Number.isFinite(candidate) || candidate <= 0) return []
+      // Guard against NaN deltas (e.g. a stray unparseable input).
+      if (!Number.isFinite(step)) return [i]
+      if (candidate > stock + 1e-9) return [i] // already at max stock
+      // Avoid silent drift: snap to step grid if needed.
+      const snapped = Math.round(candidate / step) * step
+      const finalQty = Number(snapped.toFixed(decimals + 2))
+      return [{ ...i, qty: finalQty }]
     }))
   }
   const removeFromCart = (id) => setCart((c) => c.filter((i) => i.product_id !== id))
@@ -356,7 +384,10 @@ function ProductPicker({ products, categories, onPick }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
         {filtered.map((p) => {
           const c = categories.find((c) => c.id === p.category_id)
-          const out = (p.stock || 0) <= 0
+          const stock = Number(p.stock || 0)
+          const minStock = Number(p.min_stock || 0)
+          const out = stock <= 0
+          const low = !out && stock <= minStock
           return (
             <button
               key={p.id}
@@ -373,7 +404,9 @@ function ProductPicker({ products, categories, onPick }) {
               <p className="text-xs text-steel-500">{c?.name || 'Uncategorized'}</p>
               <div className="mt-1.5 flex items-center justify-between">
                 <span className="text-sm font-bold text-brand-600">{formatBDT(p.sale_price)}</span>
-                <Badge color={out ? 'red' : (p.stock <= p.min_stock ? 'yellow' : 'gray')}>{p.stock} {getUnit(p.unit).short}</Badge>
+                <Badge color={out ? 'red' : (low ? 'yellow' : 'green')}>
+                  {out ? 'স্টক নেই' : `${stock} ${getUnit(p.unit).short}`}
+                </Badge>
               </div>
               {p.serialTracked && <p className="mt-1 text-[10px] text-steel-500">সিরিয়াল ট্র্যাকড · {p.warrantyMonths || 0} মাস</p>}
             </button>

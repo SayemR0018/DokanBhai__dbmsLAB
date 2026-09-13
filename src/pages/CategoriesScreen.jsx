@@ -62,6 +62,9 @@ export default function CategoriesScreen() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((c) => {
+            // Live aggregate — counts how many products currently belong to
+            // this category. Categories never store a quantity column of
+            // their own; the number is derived from the inventory table.
             const count = products.filter((p) => p.category_id === c.id).length
             return (
               <Card key={c.id} className="p-4 flex items-center justify-between">
@@ -71,7 +74,12 @@ export default function CategoriesScreen() {
                   </div>
                   <div>
                     <p className="font-bold text-steel-800">{c.name}</p>
-                    <Badge color="gray">{count} পণ্য</Badge>
+                    <Badge
+                      color="gray"
+                      title="প্রোডাক্টের সংখ্যা মালামাল তালিকা থেকে স্বয়ংক্রিয়ভাবে গণনা হয় / Product count is calculated automatically from inventory"
+                    >
+                      {count} পণ্য
+                    </Badge>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -109,6 +117,10 @@ export default function CategoriesScreen() {
                 ))}
               </div>
             </Field>
+            <p className="text-xs text-steel-400 bg-steel-50 rounded-lg p-3">
+              পণ্যের সংখ্যা ক্যাটাগরিতে আলাদা করে সেট করা যায় না — এটি মালামাল তালিকা থেকে স্বয়ংক্রিয়ভাবে গণনা হয়।
+              Product quantity is not stored on the category — it is auto-aggregated from the inventory.
+            </p>
           </div>
         )}
       </Modal>

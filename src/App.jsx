@@ -26,8 +26,26 @@ function Protected({ children }) {
       </div>
     )
   }
-  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+  if (!user) {
+    // Not signed in — route to /login. `state.from` lets PhoneGateScreen
+    // (or future deep-link flows) know where the user was trying to go.
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
   return <AppShell>{children}</AppShell>
+}
+
+function LoginRoute() {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-steel-400">
+        <Spinner size={32} />
+      </div>
+    )
+  }
+  // Already signed in — skip the gate and go straight to the dashboard.
+  if (user) return <Navigate to="/dashboard" replace />
+  return <PhoneGateScreen />
 }
 
 export default function App() {
@@ -54,7 +72,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<PhoneGateScreen />} />
+      <Route path="/login" element={<LoginRoute />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Protected><DashboardScreen /></Protected>} />
       <Route path="/pos" element={<Protected><NewSaleScreen /></Protected>} />

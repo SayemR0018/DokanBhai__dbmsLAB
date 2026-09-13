@@ -4,86 +4,112 @@ import { getProfile } from '../lib/dokanProfile'
 
 const AuthContext = createContext(null)
 
+// DokanBhai uses phone-first device-trust authentication — there is no
+// password or OTP. We persist the trusted device session in localStorage
+// so it survives reloads and tab restores. We DO NOT rely on
+// supabase.auth.getSession() because that returns null for our device-trust
+// flow and would constantly wipe the user state.
 const STORAGE_KEY = 'dokanbhai-auth-session'
 
 const buildUser = (phone, profile) => ({
-  id: 'local-user',
+  id: profile?.session?.phone || phone || 'local-user',
   phone,
   name: profile?.store?.ownerName || profile?.session?.displayName || 'Owner',
-  role: 'Dokan Malik',
+  role: 'owner',
   businessType: profile?.store?.businessType || 'mudi',
   businessLabel: profile?.store?.businessLabel || '',
 })
+
+const readStored = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || !parsed.phone) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+const persist = (u) => {
+  if (typeof window === 'undefined') return
+  if (u && u.phone) localStorage.setItem(STORAGE_KEY, JSON.stringify({ phone: u.phone, role: 'owner' }))
+  else localStorage.removeItem(STORAGE_KEY)
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const persist = (u) => {
-    if (typeof window === 'undefined') return
-    if (u) localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
-    else localStorage.removeItem(STORAGE_KEY)
-  }
-
+  // Hydrate from localStorage synchronously so the first render already knows
+  // whether the device is trusted. This avoids the "stuck on /login" loop that
+  // happens if we wait for a Supabase round-trip that always returns null.
   useEffect(() => {
     let cancelled = false
     const init = async () => {
-      try {
-        const supabase = getSupabase()
-        if (supabase) {
-          const { data } = await supabase.auth.getSession()
-          if (!cancelled && data?.session?.user) {
-            const u = buildUser(data.session.user.phone || data.session.user.email, getProfile())
-            setUser(u); persist(u)
-          }
-          supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-              const u = buildUser(session.user.phone || session.user.email, getProfile())
-              setUser(u); persist(u)
-            } else {
-              setUser(null); persist(null)
-            }
-          })
-        } else {
-          const raw = localStorage.getItem(STORAGE_KEY)
-          if (raw) setUser(JSON.parse(raw))
+      const stored = readStored()
+      if (!cancelled) {
+        if (stored) {
+          const u = buildUser(stored.phone, getProfile())
+          setUser(u)
         }
-      } catch (err) {
-        console.warn('Auth init failed:', err)
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (raw) setUser(JSON.parse(raw))
-      } finally {
-        if (!cancelled) setLoading(false)
+        setLoading(false)
       }
     }
     init()
     return () => { cancelled = true }
   }, [])
 
-  const login = useCallback(async (phone) => {
-    const cleanPhone = (phone || '').replace(/\D/g, '')
+  const login = useCallback(async (phoneToVerify) => {
+    const cleanPhone = (phoneToVerify || '').replace(/\D/g, '')
     if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
-      return { ok: false, error: 'সঠিক মোবাইল নম্বর দিন / Invalid BD mobile number' }
+      return { ok: false, error: 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX) / Enter a valid BD mobile number' }
     }
+
+    // 1. Match against the locally-stored profile session phone.
     const profile = getProfile()
-    const expected = (profile?.session?.phone || '').replace(/\D/g, '')
-    if (!expected) {
-      return { ok: false, error: 'প্রোফাইল পাওয়া যায়নি / Profile not found' }
+    const expectedLocal = (profile?.session?.phone || '').replace(/\D/g, '')
+    let matched = expectedLocal && expectedLocal === cleanPhone
+
+    // 2. If no local profile, fall back to a Supabase lookup so that
+    //    returning users can sign in on a fresh device if their businesses /
+    //    dokan_profile row already exists in the cloud.
+    if (!matched && isSupabaseConfigured) {
+      try {
+        const supabase = getSupabase()
+        if (supabase) {
+          const [{ data: biz }, { data: dp }] = await Promise.all([
+            supabase.from('businesses').select('phone').eq('phone', cleanPhone).maybeSingle(),
+            supabase.from('dokan_profile').select('session_phone').eq('session_phone', cleanPhone).maybeSingle(),
+          ])
+          if (biz || dp) matched = true
+        }
+      } catch (err) {
+        console.warn('[auth] Supabase lookup failed during login:', err?.message || err)
+      }
     }
-    if (cleanPhone !== expected) {
-      return { ok: false, error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / Number does not match registration' }
+
+    if (!matched) {
+      return { ok: false, error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / This number is not registered on this device' }
     }
+
     const u = buildUser(cleanPhone, profile)
-    setUser(u); persist(u)
+    setUser(u)
+    persist(u)
     return { ok: true, user: u }
   }, [])
 
   const signOut = useCallback(async () => {
+    // Best-effort Supabase sign-out (the app does not actually rely on
+    // supabase.auth sessions, but be polite to the SDK).
     const supabase = getSupabase()
     if (supabase) {
-      try { await supabase.auth.signOut() } catch {}
+      try { await supabase.auth.signOut() } catch { /* ignore */ }
     }
-    setUser(null); persist(null)
+    setUser(null)
+    persist(null)
   }, [])
 
   return (

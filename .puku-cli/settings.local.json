@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Read(//home/**)",
+      "Bash(find /workspace -maxdepth 3 -type d)"
     ]
   }
 }

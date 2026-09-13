@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
 import { Button, Input, Field, Card } from './ui'
@@ -6,10 +7,17 @@ import { PhoneIcon, LockIcon } from './icons'
 
 export default function PhoneGateScreen() {
   const { profile } = useProfile()
-  const { login, backendsMode } = useAuth()
+  const { user, loading, login, backendsMode } = useAuth()
+  const navigate = useNavigate()
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // If already authenticated (e.g. user refreshed on /login), bounce them
+  // straight to the dashboard instead of making them re-enter the phone.
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const expected = (profile?.session?.phone || '').replace(/\D/g, '')
   const expectedPretty = profile?.session?.phone || ''
@@ -17,20 +25,25 @@ export default function PhoneGateScreen() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!phone.trim()) {
+    const cleanPhone = phone.trim()
+    if (!cleanPhone) {
       setError('মোবাইল নম্বর দিন / Enter your mobile number')
       return
     }
-    if (!/^01[3-9]\d{8}$/.test(phone.trim())) {
+    if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
       setError('সঠিক BD মোবাইল নম্বর দিন (01XXXXXXXXX) / Enter a valid BD mobile number')
       return
     }
     setSubmitting(true)
-    const res = await login(phone.trim())
+    const res = await login(cleanPhone)
     setSubmitting(false)
     if (!res.ok) {
-      setError(res.error || 'Login failed')
+      setError(res.error || 'প্রবেশ ব্যর্থ / Sign in failed')
+      return
     }
+    // Successful sign in — go to the dashboard. `replace` keeps the back
+    // button from dropping the user back onto the now-stale /login screen.
+    navigate('/dashboard', { replace: true })
   }
 
   return (
@@ -76,7 +89,7 @@ export default function PhoneGateScreen() {
             </Field>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-medium">
                 {error}
               </div>
             )}
