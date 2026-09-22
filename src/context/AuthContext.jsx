@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getSupabase, isSupabaseConfigured } from '../lib/supabaseClient'
 import { getProfile } from '../lib/dokanProfile'
+import { setCurrentPhone as setDataPhone } from '../lib/data'
+import { setCurrentPhone as setProfilePhone } from '../lib/dokanProfile'
+import { setCurrentPhone as setLocalDbPhone } from '../lib/localDb'
 
 const AuthContext = createContext(null)
 
@@ -9,9 +12,35 @@ const AuthContext = createContext(null)
 // so it survives reloads and tab restores. We DO NOT rely on
 // supabase.auth.getSession() because that returns null for our device-trust
 // flow and would constantly wipe the user state.
+//
+// TENANT SCOPING — on every user change we call setCurrentPhone() on the
+// three singletons (data, dokanProfile, localDb) BEFORE building the user
+// object, so profile reads against the per-tenant storage key happen against
+// the right tenant. We also dispatch the global profile/dbchange events so
+// every page reloads its data for the new tenant.
+
 const STORAGE_KEY = 'dokanbhai-auth-session'
 
 const ADMIN_PHONE = '01700000000'
+
+// Helper to scope a clean phone — strip non-digits.
+const cleanBDT = (raw) => (raw || '').replace(/\D/g, '')
+
+// Helper to apply the current phone to every tenant-singleton in one place.
+// Call this BEFORE any getProfile() / data.list() so reads target the right tenant.
+const applyTenantScope = (phone) => {
+  const p = cleanBDT(phone)
+  setDataPhone(p)
+  setProfilePhone(p)
+  setLocalDbPhone(p)
+}
+
+// Re-emit the global events so every mounted page re-fetches its data.
+const notifyTenantSwitch = () => {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event('dokanbhai:profilechange'))
+  window.dispatchEvent(new Event('dokanbhai:dbchange'))
+}
 
 const buildUser = (phone, profile) => ({
   id: profile?.session?.phone || phone || 'local-user',
@@ -55,8 +84,13 @@ export function AuthProvider({ children }) {
       const stored = readStored()
       if (!cancelled) {
         if (stored) {
+          // Apply tenant scope BEFORE getProfile() so the profile read
+          // targets the right per-tenant storage key.
+          applyTenantScope(stored.phone)
           const u = buildUser(stored.phone, getProfile())
           setUser(u)
+          // Notify pages that the tenant is established on cold-boot.
+          notifyTenantSwitch()
         }
         setLoading(false)
       }
@@ -66,12 +100,15 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = useCallback(async (phoneToVerify) => {
-    const cleanPhone = (phoneToVerify || '').replace(/\D/g, '')
+    const cleanPhone = cleanBDT(phoneToVerify)
     if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
       return { ok: false, error: 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX) / Enter a valid BD mobile number' }
     }
 
     // 1. Match against the locally-stored profile session phone.
+    //    Tenant scope MUST be applied first so we read against the right
+    //    per-tenant storage key.
+    applyTenantScope(cleanPhone)
     const profile = getProfile()
     const expectedLocal = (profile?.session?.phone || '').replace(/\D/g, '')
     let matched = expectedLocal && expectedLocal === cleanPhone
@@ -96,16 +133,18 @@ export function AuthProvider({ children }) {
 
     const isAdminPhone = cleanPhone === ADMIN_PHONE
 
-if (!matched && !isAdminPhone) {
-  return {
-    ok: false,
-    error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / This number is not registered on this device'
-  }
-}
+    if (!matched && !isAdminPhone) {
+      return {
+        ok: false,
+        error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / This number is not registered on this device',
+      }
+    }
 
     const u = buildUser(cleanPhone, profile)
     setUser(u)
     persist(u)
+    // Trigger every page to re-read its tenant-scoped data.
+    notifyTenantSwitch()
     return { ok: true, user: u }
   }, [])
 
@@ -118,6 +157,11 @@ if (!matched && !isAdminPhone) {
     }
     setUser(null)
     persist(null)
+    // Clear tenant singletons so the next login starts from a clean slate.
+    // Per tenant-scoping decision, sign-out does NOT wipe local inventory —
+    // only the explicit Reset Device flow does.
+    applyTenantScope('')
+    notifyTenantSwitch()
   }, [])
 
   return (

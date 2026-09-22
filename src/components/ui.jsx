@@ -11,9 +11,9 @@ export function Card({ children, className = '', onClick }) {
 
 export function Button({ children, variant = 'primary', size = 'md', className = '', ...props }) {
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-5 py-3 text-base',
+    sm: 'px-3 py-1.5 text-sm min-h-[36px]',
+    md: 'px-4 py-2 text-sm min-h-[44px]',
+    lg: 'px-5 py-3 text-base min-h-[48px]',
   }
   const variants = {
     primary: 'bg-brand-500 hover:bg-brand-600 text-white shadow-sm shadow-brand-200',
@@ -38,7 +38,7 @@ export function Input(props) {
   return (
     <input
       {...rest}
-      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition ${className}`}
+      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition min-h-[40px] ${className}`}
     />
   )
 }
@@ -48,7 +48,7 @@ export function Textarea(props) {
   return (
     <textarea
       {...rest}
-      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition ${className}`}
+      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition min-h-[40px] ${className}`}
     />
   )
 }

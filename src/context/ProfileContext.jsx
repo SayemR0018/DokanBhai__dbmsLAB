@@ -1,5 +1,9 @@
 // ProfileContext — synchronously loads dokan_profile at module init so the
 // onboarding modal can render without a flicker on first launch.
+//
+// TENANT SCOPING — listens to both `dokanbhai:profilechange` (after every
+// profile write) and `dokanbhai:tenantchange` (when the authenticated
+// phone changes) so the active profile reflects the current tenant.
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { getProfile, isProfileComplete, setProfile as setProfileRaw, updateProfile as updateProfileRaw, clearProfile as clearProfileRaw } from '../lib/dokanProfile'
@@ -11,9 +15,13 @@ export function ProfileProvider({ children }) {
   const [profile, setProfileState] = useState(() => getProfile())
 
   useEffect(() => {
-    const handler = () => setProfileState(getProfile())
-    window.addEventListener('dokanbhai:profilechange', handler)
-    return () => window.removeEventListener('dokanbhai:profilechange', handler)
+    const reload = () => setProfileState(getProfile())
+    window.addEventListener('dokanbhai:profilechange', reload)
+    window.addEventListener('dokanbhai:tenantchange', reload)
+    return () => {
+      window.removeEventListener('dokanbhai:profilechange', reload)
+      window.removeEventListener('dokanbhai:tenantchange', reload)
+    }
   }, [])
 
   const setProfile = useCallback((data) => {

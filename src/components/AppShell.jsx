@@ -10,15 +10,16 @@ import BusinessTypeChips from './BusinessTypeChips'
 import {
   DashboardIcon, PackageIcon, CartIcon, UsersIcon, TruckIcon,
   TagIcon, LogOutIcon, MoneyIcon, ReceiptIcon, XIcon, PhoneIcon,
+  MenuIcon, LedgerIcon,
 } from './icons'
 
 const navItems = [
   { to: '/dashboard',  label: 'ড্যাশবোর্ড / Dashboard',  icon: DashboardIcon },
-  { to: '/pos',        label: 'নতুন বিক্রয় / New Sale', icon: CartIcon },
-  { to: '/inventory',  label: 'মালামাল / Inventory',     icon: PackageIcon },
+  { to: '/pos',        label: 'বিক্রয় / POS',           icon: CartIcon },
+  { to: '/inventory',  label: 'স্টক / Stock',            icon: PackageIcon },
   { to: '/sales',      label: 'বিক্রয় তালিকা / Sales', icon: ReceiptIcon },
   { to: '/customers',  label: 'কাস্টমার / Customers',   icon: UsersIcon },
-  { to: '/hisab',      label: 'হিসাব খাতা / Hisab',     icon: MoneyIcon },
+  { to: '/hisab',      label: 'বাকি খাতা / Hisab',      icon: LedgerIcon },
   { to: '/vendors',    label: 'সরবরাহকারী / Vendors',   icon: TruckIcon },
   { to: '/categories', label: 'ক্যাটাগরি / Categories', icon: TagIcon },
 ]
@@ -149,10 +150,8 @@ export default function AppShell({ children }) {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="lg:hidden bg-white border-b border-steel-100 px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-steel-100">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+          <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-steel-100" title="মেনু / Menu">
+            <MenuIcon size={20} />
           </button>
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center text-xs font-black">D</div>
@@ -169,11 +168,55 @@ export default function AppShell({ children }) {
             <LogOutIcon size={16} />
           </button>
         </header>
-        <main className="flex-1 overflow-y-auto scrollbar-thin">
+        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 lg:pb-0">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             {children}
           </div>
         </main>
+
+        {/* Mobile bottom nav — thumb-friendly 5-item bar.
+            Hidden on lg+, where the sidebar already covers navigation. */}
+        <nav
+          aria-label="Primary"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]"
+        >
+          <div className="grid grid-cols-5">
+            {[
+              { to: '/pos',        label: 'বিক্রয়',  sub: 'POS',     icon: CartIcon },
+              { to: '/inventory',  label: 'স্টক',     sub: 'Stock',   icon: PackageIcon },
+              { to: '/hisab',      label: 'বাকি',     sub: 'Hisab',   icon: LedgerIcon },
+              { to: '/dashboard',  label: 'ড্যাশবোর্ড', sub: 'Overview', icon: DashboardIcon },
+              { menuAction: true,  label: 'মেনু',     sub: 'Menu',    icon: MenuIcon },
+            ].map((item, idx) => (
+              item.menuAction ? (
+                <button
+                  key="menu"
+                  type="button"
+                  onClick={() => setOpen(true)}
+                  className="flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-medium text-steel-500 hover:text-steel-800 active:bg-steel-50 transition"
+                  title="মেনু / Menu"
+                >
+                  <MenuIcon size={20} />
+                  <span>{item.label}</span>
+                </button>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-medium transition active:bg-steel-50 ${
+                      isActive ? 'text-brand-600' : 'text-steel-500 hover:text-steel-800'
+                    }`
+                  }
+                  title={`${item.label} / ${item.sub}`}
+                >
+                  <item.icon size={20} />
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            ))}
+          </div>
+        </nav>
       </div>
 
       <SettingsModal

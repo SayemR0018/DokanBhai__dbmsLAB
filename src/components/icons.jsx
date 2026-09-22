@@ -58,6 +58,30 @@ export function FilterIcon(p) { return <svg {...base(p)}><polygon points="22 3 2
 
 export function PhoneIcon(p) { return <svg {...base(p)}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> }
 
+// Three-line hamburger used in the mobile bottom-nav "Menu" action and the
+// existing header hamburger trigger.
+export function MenuIcon(p) {
+  return (
+    <svg {...base(p)}>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  )
+}
+
+// "Hisab / Ledger" — book icon used by the bottom-nav.
+export function LedgerIcon(p) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 4h12a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z" />
+      <path d="M4 4v16" />
+      <line x1="8" y1="9" x2="13" y2="9" />
+      <line x1="8" y1="13" x2="13" y2="13" />
+    </svg>
+  )
+}
+
 export function LockIcon(p) { return <svg {...base(p)}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> }
 
 export function MailIcon(p) { return <svg {...base(p)}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> }

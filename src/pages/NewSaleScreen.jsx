@@ -4,10 +4,12 @@ import data from '../lib/data'
 import { useProfile } from '../context/ProfileContext'
 import { Card, Button, Input, Modal, Field, Select, EmptyState, Spinner, Badge } from '../components/ui'
 import {
-  PlusIcon, MinusIcon, SearchIcon, TrashIcon, XIcon, CheckIcon, UsersIcon, PackageIcon, MoneyIcon, ReceiptIcon, PrintIcon,
+  PlusIcon, MinusIcon, SearchIcon, TrashIcon, XIcon, CheckIcon, UsersIcon, PackageIcon, MoneyIcon, ReceiptIcon, PrintIcon, CartIcon,
 } from '../components/icons'
 import { formatBDT, formatDateTime, formatQty, initials, avatarColor } from '../lib/format'
 import { stepFor, decimalsFor, normalizeUnitKey, getUnit, roundQty } from '../lib/units'
+
+const PHONE_REGEX = /^01[3-9]\d{8}$/
 
 export default function NewSaleScreen() {
   const navigate = useNavigate()
@@ -17,14 +19,17 @@ export default function NewSaleScreen() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [cart, setCart] = useState([]) // [{ product_id, name, unit_price, qty, unit, stock, serialTracked, warrantyMonths, serialNumber, warrantyNote }]
-  const [customer, setCustomer] = useState(null)
+  const [customer, setCustomer] = useState(null) // null = walk-in
   const [discount, setDiscount] = useState(0)
   const [paid, setPaid] = useState(0)
   const [payType, setPayType] = useState('cash')
   const [note, setNote] = useState('')
-  const [showPicker, setShowPicker] = useState(null)
+  const [showPicker, setShowPicker] = useState(null) // 'product' | 'customer' | null
   const [processing, setProcessing] = useState(false)
   const [receipt, setReceipt] = useState(null)
+  const [catalogSearch, setCatalogSearch] = useState('')
+  const [cartSheetOpen, setCartSheetOpen] = useState(false)
+  const [bakiSheetOpen, setBakiSheetOpen] = useState(false)
 
   const receiptWidth = profile?.store?.receiptWidth || '80mm'
 
@@ -47,13 +52,21 @@ export default function NewSaleScreen() {
     load()
     const handler = () => load()
     window.addEventListener('dokanbhai:dbchange', handler)
-    return () => window.removeEventListener('dokanbhai:dbchange', handler)
+    window.addEventListener('dokanbhai:tenantchange', handler)
+    return () => {
+      window.removeEventListener('dokanbhai:dbchange', handler)
+      window.removeEventListener('dokanbhai:tenantchange', handler)
+    }
   }, [])
 
   const subtotal = useMemo(() => cart.reduce((s, it) => s + it.qty * it.unit_price, 0), [cart])
   const total = useMemo(() => Math.max(0, subtotal - Number(discount || 0)), [subtotal, discount])
   const due = useMemo(() => Math.max(0, total - Number(paid || 0)), [total, paid])
   const change = useMemo(() => Math.max(0, Number(paid || 0) - total), [paid, total])
+
+  // Baki workflow — if the user picks credit or under-pays, a customer is
+  // REQUIRED. The baki modal (B1) collects one if not already assigned.
+  const bakiRequired = (payType === 'credit') || (due > 0)
 
   const addToCart = (p) => {
     // `p.stock` has already been coerced to Number() in `load()` above. We
@@ -124,39 +137,61 @@ export default function NewSaleScreen() {
   }
 
   const onCheckout = async () => {
-    if (!customer) { alert('Please select a customer'); return }
-    if (cart.length === 0) { alert('Cart is empty'); return }
+    if (cart.length === 0) { alert('কার্ট খালি / Cart is empty'); return }
+    // Baki gate: must have a customer. Walk-in is allowed ONLY for cash.
+    if (bakiRequired && !customer) {
+      setBakiSheetOpen(true)
+      return
+    }
     setProcessing(true)
     try {
+      // Walk-in sales have a null customer_id. The PostgreSQL stored
+      // procedure expects a sanitized payload, so we explicitly coerce
+      // everything to a clean Number / string.
       const invoice = await data.createSale({
-        customer_id: customer.id,
+        customer_id: customer ? customer.id : null,
         items: cart.map((i) => ({
           product_id: i.product_id,
           name: i.name,
-          qty: i.qty,
-          unit_price: i.unit_price,
+          qty: Number(i.qty),
+          unit_price: Number(i.unit_price),
           serialNumber: i.serialNumber || '',
           warrantyNote: i.warrantyNote || '',
         })),
         discount: Number(discount || 0),
         paid_amount: Number(paid || 0),
         pay_type: payType,
-        note,
+        note: note || '',
       })
       setReceipt({ ...invoice, customer })
+      setCartSheetOpen(false)
     } catch (err) {
-      alert('Failed to save sale: ' + (err?.message || err))
+      alert('বিক্রয় সংরক্ষণ ব্যর্থ / Failed to save sale: ' + (err?.message || err))
     } finally {
       setProcessing(false)
     }
   }
 
   const resetSale = () => {
-    setCart([]); setCustomer(null); setDiscount(0); setPaid(0); setPayType('cash'); setNote(''); setReceipt(null)
+    setCart([]); setCustomer(null); setDiscount(0); setPaid(0); setPayType('cash'); setNote(''); setReceipt(null); setCatalogSearch(''); setCartSheetOpen(false)
     load()
   }
 
+  // Quick catalog filter (used by the mobile in-page catalog).
+  const filteredCatalog = useMemo(() => {
+    const q = catalogSearch.trim().toLowerCase()
+    if (!q) return products
+    return products.filter((p) => {
+      const name = (p.name || '').toLowerCase()
+      const cat = categories.find((c) => c.id === p.category_id)
+      const catName = (cat?.name || '').toLowerCase()
+      return name.includes(q) || catName.includes(q)
+    })
+  }, [products, categories, catalogSearch])
+
   if (loading) return <div className="flex items-center justify-center py-20 text-steel-400"><Spinner size={28} /></div>
+
+  const walkIn = !customer
 
   return (
     <div className="space-y-6">
@@ -170,20 +205,79 @@ export default function NewSaleScreen() {
           <Button variant="secondary" size="sm" onClick={toggleReceiptWidth} title="Toggle receipt width">
             <PrintIcon size={14} /> {receiptWidth}
           </Button>
-          <Button variant="secondary" size="sm" onClick={resetSale}>Clear</Button>
+          <Button variant="secondary" size="sm" onClick={resetSale}>মুছুন / Clear</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Mobile-only inline product catalog with real-time search.
+          Hidden on lg+, where the desktop layout below takes over. */}
+      <div className="lg:hidden">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <h3 className="font-bold text-steel-800 flex-1">পণ্য / Products</h3>
+            <span className="text-xs text-steel-500">{filteredCatalog.length} / {products.length}</span>
+          </div>
+          <div className="relative mb-3">
+            <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
+            <Input
+              value={catalogSearch}
+              onChange={(e) => setCatalogSearch(e.target.value)}
+              placeholder="মালামাল খুঁজুন (নাম, ক্যাটাগরি)... / Search stock"
+              className="pl-9 min-h-[44px]"
+              inputMode="search"
+            />
+          </div>
+          {filteredCatalog.length === 0 ? (
+            <EmptyState icon={<PackageIcon size={28} />} title="কোনো পণ্য মেলেনি / No matches" />
+          ) : (
+            <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-1">
+              {filteredCatalog.map((p) => {
+                const stock = Number(p.stock || 0)
+                const minStock = Number(p.min_stock || 0)
+                const out = stock <= 0
+                const low = !out && stock <= minStock
+                const cat = categories.find((c) => c.id === p.category_id)
+                const inCart = cart.some((c) => c.product_id === p.id)
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    disabled={out}
+                    className={`text-left p-3 rounded-xl border transition min-h-[88px] ${
+                      out
+                        ? 'bg-steel-50 border-steel-100 opacity-50 cursor-not-allowed'
+                        : 'bg-white border-steel-200 hover:border-brand-300 hover:bg-brand-50 active:scale-[0.98]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="font-semibold text-xs text-steel-800 line-clamp-2 leading-tight">{p.name}</span>
+                      {inCart && <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0 mt-1" />}
+                    </div>
+                    {cat && <p className="mt-0.5 text-[10px] text-steel-500 truncate">{cat.name}</p>}
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <span className="text-xs font-bold text-brand-600">{formatBDT(p.sale_price)}</span>
+                      <Badge color={out ? 'red' : (low ? 'yellow' : 'green')}>
+                        {out ? 'স্টক নেই' : `${stock} ${getUnit(p.unit).short}`}
+                      </Badge>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-4 lg:space-y-0">
         <div className="lg:col-span-2 space-y-4">
-          <Card className="p-4">
+          <Card className="p-4 hidden lg:block">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-steel-800">Products</h3>
-              <Button size="sm" onClick={() => setShowPicker('product')}><PlusIcon size={16} /> Add items</Button>
+              <h3 className="font-bold text-steel-800">পণ্য / Products</h3>
+              <Button size="sm" onClick={() => setShowPicker('product')}><PlusIcon size={16} /> যোগ করুন / Add items</Button>
             </div>
             {cart.length === 0 ? (
-              <EmptyState icon={<PackageIcon size={32} />} title="Cart is empty" description="Pick products to start a sale." action={
-                <Button onClick={() => setShowPicker('product')}><PlusIcon size={16} /> Choose products</Button>
+              <EmptyState icon={<PackageIcon size={32} />} title="কার্ট খালি / Cart is empty" description="পণ্য বাছাই করে বিক্রয় শুরু করুন। Pick products to start a sale." action={
+                <Button onClick={() => setShowPicker('product')}><PlusIcon size={16} /> পণ্য বাছুন / Choose products</Button>
               } />
             ) : (
               <div className="divide-y divide-steel-100">
@@ -195,13 +289,14 @@ export default function NewSaleScreen() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-steel-800 truncate">{it.name}</p>
-                        <p className="text-xs text-steel-500">Stock: {it.stock} {getUnit(it.unit).short}{it.serialTracked ? ' · সিরিয়াল ট্র্যাকড' : ''}{it.warrantyMonths ? ` · ${it.warrantyMonths} মাস ওয়ারেন্টি` : ''}</p>
+                        <p className="text-xs text-steel-500">স্টক / Stock: {it.stock} {getUnit(it.unit).short}{it.serialTracked ? ' · সিরিয়াল ট্র্যাকড' : ''}{it.warrantyMonths ? ` · ${it.warrantyMonths} মাস ওয়ারেন্টি` : ''}</p>
                       </div>
                       <div>
                         <Input
                           type="number"
                           min="0"
                           step={stepFor(it.unit)}
+                          inputMode="decimal"
                           value={it.unit_price}
                           onChange={(e) => setPrice(it.product_id, e.target.value)}
                           className="w-24 text-right"
@@ -245,7 +340,14 @@ export default function NewSaleScreen() {
 
         <div className="space-y-4">
           <Card className="p-4">
-            <h3 className="font-bold text-steel-800 mb-3">Customer</h3>
+            <h3 className="font-bold text-steel-800 mb-1">
+              কাস্টমার / Customer
+              {walkIn && <span className="ml-2 text-xs text-steel-500 font-normal">· ওয়াক-ইন কাস্টমার / Walk-in</span>}
+            </h3>
+            <p className="text-[11px] text-steel-500 mb-3">
+              ক্যাশ ও অনলাইন বিক্রয়ের জন্য কাস্টমার ঐচ্ছিক। বাকি বিক্রয়ে কাস্টমার আবশ্যক।
+              <br />Customer optional for cash/online; required for baki/credit.
+            </p>
             {customer ? (
               <div className="flex items-center justify-between p-3 bg-brand-50 border border-brand-200 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -257,84 +359,231 @@ export default function NewSaleScreen() {
                     <p className="text-xs text-steel-500">{customer.phone || '—'}</p>
                   </div>
                 </div>
-                <button onClick={() => setCustomer(null)} className="p-1.5 rounded-lg text-steel-500 hover:bg-white"><XIcon size={14} /></button>
+                <button onClick={() => setCustomer(null)} className="p-1.5 rounded-lg text-steel-500 hover:bg-white" title="মুছুন / Remove"><XIcon size={14} /></button>
               </div>
             ) : (
-              <Button variant="secondary" className="w-full" onClick={() => setShowPicker('customer')}>
-                <UsersIcon size={16} /> Select customer
+              <Button variant="secondary" className="w-full min-h-[44px]" onClick={() => setShowPicker('customer')}>
+                <UsersIcon size={16} /> কাস্টমার বাছুন / Select customer
               </Button>
             )}
           </Card>
 
           <Card className="p-4">
-            <h3 className="font-bold text-steel-800 mb-3">Payment</h3>
+            <h3 className="font-bold text-steel-800 mb-3">পেমেন্ট / Payment</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-steel-500">মোট (Subtotal)</span>
+                <span className="text-steel-500">মোট / Subtotal</span>
                 <span className="font-semibold text-steel-800">{formatBDT(subtotal)}</span>
               </div>
-              <Field label="ডিসকাউন্ট / Discount (৳)">
-                <Input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value || 0))} />
+              <Field label="ছাড় / Discount (৳)">
+                <Input type="number" min="0" step="0.01" inputMode="decimal" value={discount} onChange={(e) => setDiscount(Number(e.target.value || 0))} className="min-h-[44px]" />
               </Field>
               <div className="flex items-center justify-between text-base font-bold border-t border-steel-100 pt-2">
-                <span>সর্বমোট (Total)</span>
+                <span>সর্বমোট / Total</span>
                 <span className="text-brand-600">{formatBDT(total)}</span>
               </div>
-              <Field label="প্রদান / Paid amount (৳)">
-                <Input type="number" min="0" step="0.01" value={paid} onChange={(e) => setPaid(Number(e.target.value || 0))} />
+              <Field label="পরিশোধ / Paid amount (৳)">
+                <Input type="number" min="0" step="0.01" inputMode="decimal" value={paid} onChange={(e) => setPaid(Number(e.target.value || 0))} className="min-h-[44px]" />
               </Field>
-              <Field label="পেমেন্ট পদ্ধতি (Payment method)">
+              <Field label="পেমেন্ট পদ্ধতি / Payment method">
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { k: 'cash', label: 'নগদ (Nogod)' },
-                    { k: 'credit', label: 'বাকি (Baki)' },
-                    { k: 'online', label: 'অনলাইন' },
+                    { k: 'cash',   label: 'নগদ', sub: 'Cash' },
+                    { k: 'credit', label: 'বাকি', sub: 'Baki' },
+                    { k: 'online', label: 'অনলাইন', sub: 'Online' },
                   ].map((p) => (
                     <button
                       key={p.k}
                       type="button"
                       onClick={() => setPayType(p.k)}
-                      className={`py-2 rounded-lg text-xs font-semibold border transition ${
+                      className={`min-h-[44px] py-2 rounded-lg text-xs font-semibold border transition ${
                         payType === p.k
                           ? 'bg-brand-500 text-white border-brand-500'
                           : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
                       }`}
-                    >{p.label}</button>
+                    >
+                      <span className="block">{p.label}</span>
+                      <span className="block text-[9px] font-normal opacity-80">{p.sub}</span>
+                    </button>
                   ))}
                 </div>
               </Field>
               <Field label="Note (optional)">
-                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reference" />
+                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reference / রেফারেন্স" />
               </Field>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="p-3 rounded-lg bg-red-50 border border-red-100">
-                  <p className="text-[10px] uppercase tracking-wide text-red-600 font-semibold">বাকি (Due)</p>
+                  <p className="text-[10px] uppercase tracking-wide text-red-600 font-semibold">বাকি / Due</p>
                   <p className="text-lg font-bold text-red-700">{formatBDT(due)}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                  <p className="text-[10px] uppercase tracking-wide text-emerald-600 font-semibold">{change > 0 ? 'Change' : 'Paid'}</p>
+                  <p className="text-[10px] uppercase tracking-wide text-emerald-600 font-semibold">{change > 0 ? 'ফেরত / Change' : 'পরিশোধ / Paid'}</p>
                   <p className="text-lg font-bold text-emerald-700">{formatBDT(change > 0 ? change : paid)}</p>
                 </div>
               </div>
-              <Button onClick={onCheckout} size="lg" className="w-full" disabled={processing || cart.length === 0 || !customer}>
-                <CheckIcon size={18} /> {processing ? 'Saving…' : 'Complete sale'}
+              <Button onClick={onCheckout} size="lg" className="w-full min-h-[48px]" disabled={processing || cart.length === 0}>
+                <CheckIcon size={18} /> {processing ? 'সংরক্ষণ হচ্ছে… / Saving…' : 'বিক্রয় সম্পন্ন / Complete sale'}
               </Button>
             </div>
           </Card>
         </div>
       </div>
 
-      <Modal open={showPicker === 'product'} onClose={() => setShowPicker(null)} title="Choose products" size="xl">
+      {/* Mobile-only sticky bottom cart bar.
+          Hidden when the cart sheet is open so the bar doesn't double up. */}
+      <div
+        className={`lg:hidden fixed bottom-[56px] left-0 right-0 z-30 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)] ${cartSheetOpen ? 'hidden' : ''}`}
+      >
+        <button
+          type="button"
+          onClick={() => setCartSheetOpen(true)}
+          className="w-full flex items-center justify-between px-4 py-3 active:bg-steel-50 min-h-[56px]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <CartIcon size={22} className="text-brand-600" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {cart.length}
+                </span>
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-[11px] text-steel-500">{cart.length} টি পণ্য / items</p>
+              <p className="text-base font-bold text-steel-800">{formatBDT(total)}</p>
+            </div>
+          </div>
+          <span className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[40px] inline-flex items-center">
+            অর্ডার দেখুন / View Cart →
+          </span>
+        </button>
+      </div>
+
+      {/* Mobile cart bottom sheet — reuses the existing Modal which slides up
+          from the bottom on small screens (`items-end` in ui.jsx). */}
+      <Modal open={cartSheetOpen} onClose={() => setCartSheetOpen(false)} title="কার্ট / Cart" size="lg">
+        <div className="space-y-3">
+          {cart.length === 0 ? (
+            <EmptyState icon={<PackageIcon size={28} />} title="কার্ট খালি / Cart is empty" description="পণ্য যোগ করতে নিচে তালিকা থেকে বাছুন।" />
+          ) : (
+            <>
+              <div className="divide-y divide-steel-100 -mx-2">
+                {cart.map((it) => (
+                  <div key={it.product_id} className="px-2 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-steel-800 truncate">{it.name}</p>
+                        <p className="text-[11px] text-steel-500">{formatBDT(it.unit_price)} × {formatQty(it.qty, it.unit)}</p>
+                      </div>
+                      <div className="inline-flex items-center border border-steel-200 rounded-lg overflow-hidden">
+                        <button onClick={() => updateQty(it.product_id, -stepFor(it.unit))} className="px-2 py-2 min-h-[40px] min-w-[40px] hover:bg-steel-50"><MinusIcon size={14} /></button>
+                        <span className="px-2 text-sm font-semibold">{formatQty(it.qty, it.unit)}</span>
+                        <button onClick={() => updateQty(it.product_id, stepFor(it.unit))} className="px-2 py-2 min-h-[40px] min-w-[40px] hover:bg-steel-50"><PlusIcon size={14} /></button>
+                      </div>
+                      <div className="w-20 text-right font-bold text-sm text-steel-800">{formatBDT(it.qty * it.unit_price)}</div>
+                      <button onClick={() => removeFromCart(it.product_id)} className="p-2 text-steel-400 hover:text-red-600"><TrashIcon size={14} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Embedded quick-payment + checkout block */}
+              <Card className="p-3 bg-steel-50">
+                <Field label="ছাড় / Discount (৳)">
+                  <Input type="number" min="0" step="0.01" inputMode="decimal" value={discount} onChange={(e) => setDiscount(Number(e.target.value || 0))} className="min-h-[44px]" />
+                </Field>
+                <Field label="পরিশোধ / Paid amount (৳)" className="mt-2">
+                  <Input type="number" min="0" step="0.01" inputMode="decimal" value={paid} onChange={(e) => setPaid(Number(e.target.value || 0))} className="min-h-[44px]" />
+                </Field>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {[
+                    { k: 'cash', label: 'নগদ / Cash' },
+                    { k: 'credit', label: 'বাকি / Baki' },
+                    { k: 'online', label: 'অনলাইন / Online' },
+                  ].map((p) => (
+                    <button
+                      key={p.k}
+                      type="button"
+                      onClick={() => setPayType(p.k)}
+                      className={`min-h-[44px] py-2 rounded-lg text-[11px] font-semibold border ${
+                        payType === p.k
+                          ? 'bg-brand-500 text-white border-brand-500'
+                          : 'bg-white text-steel-600 border-steel-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-steel-200">
+                  <div>
+                    <p className="text-[11px] text-steel-500">মোট / Total</p>
+                    <p className="text-lg font-bold text-brand-600">{formatBDT(total)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-steel-500">{bakiRequired ? 'বাকি / Due' : 'পরিষ্কার / Clear'}</p>
+                    <p className={`text-lg font-bold ${bakiRequired ? 'text-red-600' : 'text-emerald-600'}`}>{formatBDT(bakiRequired ? due : paid)}</p>
+                  </div>
+                </div>
+                <Button onClick={onCheckout} size="lg" className="w-full mt-3 min-h-[48px]" disabled={processing}>
+                  <CheckIcon size={18} /> {processing ? 'সংরক্ষণ… / Saving…' : 'বিক্রয় সম্পন্ন / Complete sale'}
+                </Button>
+                {walkIn && bakiRequired && (
+                  <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    ⚠️ বাকি বিক্রয়ের জন্য কাস্টমার আবশ্যক। Baki sales require a customer.
+                  </p>
+                )}
+              </Card>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      {/* Baki bottom-sheet — only triggered when payType=credit or due > 0.
+          Allows picking an existing customer OR quickly creating one (Name +
+          Mobile only, no Address/Note) in 2 taps without losing cart items. */}
+      <Modal
+        open={bakiSheetOpen}
+        onClose={() => setBakiSheetOpen(false)}
+        title="বাকি কাস্টমার নির্বাচন / Select Customer for Baki"
+        size="lg"
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            {(!bakiRequired) && (
+              <Button variant="secondary" onClick={() => setBakiSheetOpen(false)}>বাতিল / Cancel</Button>
+            )}
+            {walkIn && !bakiRequired && (
+              <Button variant="secondary" onClick={() => { setPayType('cash'); setPaid(total); setBakiSheetOpen(false) }}>
+                নগদ হিসেবে পরিশোধ / Pay as cash
+              </Button>
+            )}
+          </div>
+        }
+      >
+        <BakiCustomerPicker
+          customers={customers}
+          onPick={(c) => { setCustomer(c); setBakiSheetOpen(false) }}
+          onCreate={async (payload) => {
+            const newC = await data.insert('customers', { ...payload, balance: 0 })
+            setCustomer(newC)
+            setBakiSheetOpen(false)
+            load()
+            return newC
+          }}
+        />
+      </Modal>
+
+      <Modal open={showPicker === 'product'} onClose={() => setShowPicker(null)} title="পণ্য বাছুন / Choose products" size="xl">
         <ProductPicker products={products} categories={categories} onPick={addToCart} />
       </Modal>
 
-      <Modal open={showPicker === 'customer'} onClose={() => setShowPicker(null)} title="Select customer" size="lg">
+      <Modal open={showPicker === 'customer'} onClose={() => setShowPicker(null)} title="কাস্টমার নির্বাচন / Select customer" size="lg">
         <CustomerPicker
           customers={customers}
           onPick={(c) => { setCustomer(c); setShowPicker(null) }}
           onCreate={async (payload) => {
-            const newC = await data.insert('customers', payload)
+            const newC = await data.insert('customers', { ...payload, balance: 0 })
             setCustomer(newC); setShowPicker(null); load()
+            return newC
           }}
         />
       </Modal>
@@ -342,14 +591,14 @@ export default function NewSaleScreen() {
       <Modal
         open={!!receipt}
         onClose={() => { setReceipt(null); resetSale() }}
-        title="Sale complete"
+        title="বিক্রয় সম্পন্ন / Sale complete"
         size="lg"
         footer={
           <div className="flex justify-between gap-2">
-            <Button variant="secondary" onClick={() => { setReceipt(null); resetSale() }}>New sale</Button>
+            <Button variant="secondary" onClick={() => { setReceipt(null); resetSale() }}>নতুন বিক্রয় / New sale</Button>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => navigate('/sales')}><ReceiptIcon size={16} /> Sales history</Button>
-              <Button onClick={() => window.print()}><PrintIcon size={16} /> Print receipt</Button>
+              <Button variant="secondary" onClick={() => navigate('/sales')}><ReceiptIcon size={16} /> বিক্রয় তালিকা / Sales history</Button>
+              <Button onClick={() => window.print()}><PrintIcon size={16} /> রিসিট প্রিন্ট / Print receipt</Button>
             </div>
           </div>
         }
@@ -374,10 +623,10 @@ function ProductPicker({ products, categories, onPick }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div className="relative">
           <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="pl-9" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="পণ্য খুঁজুন / Search products" className="pl-9 min-h-[44px]" inputMode="search" />
         </div>
         <Select value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="">All categories</option>
+          <option value="">সব ক্যাটাগরি / All categories</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </Select>
       </div>
@@ -412,64 +661,147 @@ function ProductPicker({ products, categories, onPick }) {
             </button>
           )
         })}
-        {filtered.length === 0 && <p className="col-span-full text-center text-sm text-steel-500 py-6">No products found.</p>}
+        {filtered.length === 0 && <p className="col-span-full text-center text-sm text-steel-500 py-6">কোনো পণ্য মেলেনি / No products found.</p>}
       </div>
     </div>
   )
 }
 
+// CustomerPicker used by the manual "Select customer" button (optional
+// attachment). Includes simplified Name+Phone creation form.
 function CustomerPicker({ customers, onPick, onCreate }) {
   const [search, setSearch] = useState('')
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', address: '' })
+  const [form, setForm] = useState({ name: '', phone: '' })
+  const phoneValid = !form.phone || PHONE_REGEX.test(form.phone)
   const filtered = customers.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
         <div className="relative flex-1">
           <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customers" className="pl-9" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="কাস্টমার খুঁজুন / Search customers" className="pl-9 min-h-[44px]" inputMode="search" />
         </div>
-        <Button onClick={() => setShowNew(true)}><PlusIcon size={16} /> New</Button>
+        <Button onClick={() => setShowNew(true)}><PlusIcon size={16} /> নতুন / New</Button>
       </div>
       <ul className="space-y-2 max-h-72 overflow-y-auto">
         {filtered.map((c) => (
           <li key={c.id}>
-            <button onClick={() => onPick(c)} className="w-full flex items-center gap-3 p-3 rounded-xl border border-steel-100 hover:border-brand-300 hover:bg-brand-50 transition text-left">
+            <button onClick={() => onPick(c)} className="w-full flex items-center gap-3 p-3 rounded-xl border border-steel-100 hover:border-brand-300 hover:bg-brand-50 transition text-left min-h-[56px]">
               <div className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold" style={{ background: avatarColor(c.name) }}>
                 {initials(c.name)}
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-steel-800">{c.name}</p>
-                <p className="text-xs text-steel-500">{c.phone || '—'}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-steel-800 truncate">{c.name}</p>
+                <p className="text-xs text-steel-500 truncate">{c.phone || '—'}</p>
               </div>
               {c.balance > 0 && <Badge color="red">বাকি {formatBDT(c.balance)}</Badge>}
             </button>
           </li>
         ))}
-        {filtered.length === 0 && <p className="text-center text-sm text-steel-500 py-6">No customers.</p>}
+        {filtered.length === 0 && <p className="text-center text-sm text-steel-500 py-6">কোনো কাস্টমার / No customers.</p>}
       </ul>
       {showNew && (
         <Modal
           open={showNew}
           onClose={() => setShowNew(false)}
-          title="New customer"
+          title="নতুন কাস্টমার / New customer"
           footer={
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowNew(false)}>Cancel</Button>
-              <Button onClick={() => { if (form.name.trim()) { onCreate({ ...form, balance: 0 }); setShowNew(false); setForm({ name: '', phone: '', address: '' }) } }}>
-                Save
+              <Button variant="secondary" onClick={() => setShowNew(false)}>বাতিল / Cancel</Button>
+              <Button
+                disabled={!form.name.trim() || !phoneValid}
+                onClick={async () => {
+                  if (!form.name.trim() || !phoneValid) return
+                  await onCreate({ name: form.name.trim(), phone: form.phone.trim() })
+                  setShowNew(false); setForm({ name: '', phone: '' })
+                }}
+              >
+                সংরক্ষণ / Save
               </Button>
             </div>
           }
         >
           <div className="space-y-3">
-            <Field label="Name"><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
-            <Field label="Phone"><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
-            <Field label="Address"><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
+            <Field label="নাম / Name (আবশ্যক / required)">
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus placeholder="যেমন / e.g. Rahim Mia" />
+            </Field>
+            <Field label="মোবাইল / Phone (ঐচ্ছিক / optional)" hint={!phoneValid ? 'সঠিক ১১ ডিজিটের নম্বর দিন (01XXXXXXXXX)' : '01XXXXXXXXX — বাকি ট্র্যাকিংয়ের জন্য সুপারিশকৃত'}>
+              <Input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                inputMode="numeric"
+                maxLength={11}
+                placeholder="01XXXXXXXXX"
+              />
+            </Field>
           </div>
         </Modal>
       )}
+    </div>
+  )
+}
+
+// BakiCustomerPicker — same UX as CustomerPicker but always shows the
+// "New customer" expander inline (no second modal) for fast 2-tap creation.
+function BakiCustomerPicker({ customers, onPick, onCreate }) {
+  const [search, setSearch] = useState('')
+  const [form, setForm] = useState({ name: '', phone: '' })
+  const [saving, setSaving] = useState(false)
+  const phoneValid = !form.phone || PHONE_REGEX.test(form.phone)
+  const filtered = customers.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
+  const onQuickCreate = async () => {
+    if (!form.name.trim() || !phoneValid || !form.phone) return
+    setSaving(true)
+    try { await onCreate({ name: form.name.trim(), phone: form.phone.trim() }) }
+    finally { setSaving(false); setForm({ name: '', phone: '' }) }
+  }
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="কাস্টমার খুঁজুন / Search customers" className="pl-9 min-h-[44px]" inputMode="search" />
+      </div>
+      <ul className="space-y-2 max-h-60 overflow-y-auto">
+        {filtered.map((c) => (
+          <li key={c.id}>
+            <button onClick={() => onPick(c)} className="w-full flex items-center gap-3 p-3 rounded-xl border border-steel-100 hover:border-brand-300 hover:bg-brand-50 transition text-left min-h-[56px]">
+              <div className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold" style={{ background: avatarColor(c.name) }}>
+                {initials(c.name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-steel-800 truncate">{c.name}</p>
+                <p className="text-xs text-steel-500 truncate">{c.phone || '—'}</p>
+              </div>
+              {c.balance > 0 && <Badge color="red">বাকি {formatBDT(c.balance)}</Badge>}
+            </button>
+          </li>
+        ))}
+        {filtered.length === 0 && (
+          <li className="text-center text-sm text-steel-500 py-3">কোনো কাস্টমার মেলেনি / No matching customer — নিচে নতুন তৈরি করুন।</li>
+        )}
+      </ul>
+
+      <div className="border-t border-steel-100 pt-3">
+        <p className="text-xs uppercase tracking-wider text-steel-500 font-semibold mb-2">নতুন কাস্টমার যোগ করুন / Quick add customer</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Field label="নাম / Name">
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="কাস্টমারের নাম" autoFocus />
+          </Field>
+          <Field label="মোবাইল / Phone" hint={form.phone && !phoneValid ? 'সঠিক ১১ ডিজিটের নম্বর দিন (01XXXXXXXXX)' : '01XXXXXXXXX'}>
+            <Input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="01XXXXXXXXX"
+            />
+          </Field>
+        </div>
+        <Button onClick={onQuickCreate} disabled={saving || !form.name.trim() || !phoneValid || !form.phone} className="mt-2 w-full min-h-[44px]">
+          <PlusIcon size={16} /> {saving ? 'যোগ হচ্ছে… / Adding…' : 'যোগ করুন ও বাছুন / Add & select'}
+        </Button>
+      </div>
     </div>
   )
 }

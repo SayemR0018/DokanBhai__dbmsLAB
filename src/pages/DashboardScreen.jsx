@@ -93,8 +93,8 @@ export default function DashboardScreen() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-steel-800">{bizName}</h1>
           <p className="text-sm text-steel-500 mt-1">আসসালামু আলাইকুম! আজকের দোকানের হিসাব দেখুন।</p>
         </div>
-        <Link to="/pos" className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm shadow-brand-200">
-          <CartIcon size={18} /> New Sale
+        <Link to="/pos" className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm shadow-brand-200 min-h-[44px]">
+          <CartIcon size={18} /> নতুন বিক্রয় / New Sale
         </Link>
       </div>
 
@@ -105,7 +105,7 @@ export default function DashboardScreen() {
             <div>
               <p className="text-xs uppercase tracking-wide text-white/80">মোট বিক্রয় (Total Sales)</p>
               <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalSales)}</p>
-              <p className="text-xs text-white/80 mt-1">Last 30 days · {stats.monthCount} sales</p>
+              <p className="text-xs text-white/80 mt-1">গত ৩০ দিন · {stats.monthCount} বিক্রয় / Last 30 days · {stats.monthCount} sales</p>
             </div>
             <TrendingUpIcon size={28} className="text-white/80" />
           </div>
@@ -115,7 +115,7 @@ export default function DashboardScreen() {
             <div>
               <p className="text-xs uppercase tracking-wide text-white/80">নগদ (Nogod)</p>
               <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalCash)}</p>
-              <p className="text-xs text-white/80 mt-1">Cash received</p>
+              <p className="text-xs text-white/80 mt-1">নগদ গৃহীত / Cash received</p>
             </div>
             <MoneyIcon size={28} className="text-white/80" />
           </div>
@@ -125,7 +125,7 @@ export default function DashboardScreen() {
             <div>
               <p className="text-xs uppercase tracking-wide text-white/80">মোট বাকি (Baki)</p>
               <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalDue)}</p>
-              <p className="text-xs text-white/80 mt-1">Across {customers.filter((c) => c.balance > 0).length} customers</p>
+              <p className="text-xs text-white/80 mt-1">{customers.filter((c) => c.balance > 0).length} জন কাস্টমারের মধ্যে / Across {customers.filter((c) => c.balance > 0).length} customers</p>
             </div>
             <AlertIcon size={28} className="text-white/80" />
           </div>
@@ -135,7 +135,7 @@ export default function DashboardScreen() {
             <div>
               <p className="text-xs uppercase tracking-wide text-white/80">স্টক কম (Low Stock)</p>
               <p className="text-2xl font-bold mt-2">{stats.lowStock.length}</p>
-              <p className="text-xs text-white/80 mt-1">Items below threshold</p>
+              <p className="text-xs text-white/80 mt-1">সর্বনিম্ন থেকে কম / Items below threshold</p>
             </div>
             <PackageIcon size={28} className="text-white/80" />
           </div>
@@ -170,7 +170,7 @@ export default function DashboardScreen() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-steel-800">লো-স্টক অ্যালার্ট</h3>
-            <Link to="/inventory" className="text-xs text-brand-600 font-semibold inline-flex items-center gap-1">View all <ChevronRightIcon size={14} /></Link>
+            <Link to="/inventory" className="text-xs text-brand-600 font-semibold inline-flex items-center gap-1">সব দেখুন / View all <ChevronRightIcon size={14} /></Link>
           </div>
           {stats.lowStock.length === 0 ? (
             <EmptyState icon={<PackageIcon size={28} />} title="All stocked!" description="No products are below their minimum threshold." />
@@ -199,7 +199,7 @@ export default function DashboardScreen() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-steel-800">সাম্প্রতিক বিক্রয় (Recent Sales)</h3>
-          <Link to="/sales" className="text-xs text-brand-600 font-semibold inline-flex items-center gap-1">All sales <ChevronRightIcon size={14} /></Link>
+          <Link to="/sales" className="text-xs text-brand-600 font-semibold inline-flex items-center gap-1">সব বিক্রয় / All sales <ChevronRightIcon size={14} /></Link>
         </div>
         {recentSales.length === 0 ? (
           <EmptyState icon={<CartIcon size={28} />} title="No sales yet" description="Create your first sale from the POS screen." />

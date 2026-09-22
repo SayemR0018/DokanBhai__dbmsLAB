@@ -1,22 +1,55 @@
 // Local persistent database backed by localStorage.
 // Mirrors the schema for the Mudi Dokan management app:
 //   businesses, categories, vendors, customers, products, transactions, invoices, payments.
+//
+// TENANT SCOPING — the storage key is suffixed with the authenticated phone
+// (`dokanbhai-local-db_${phone}`) so different logins on the same device
+// never share inventory, sales, or customer data. On first read for a given
+// phone, the legacy `dokanbhai-local-db-v1` blob is copied into the new key
+// (idempotent — tracked by a sibling migration flag).
+//
+// Rows also carry a `phone` field stamped on every write so list/get can
+// filter cross-tenant rows client-side even if multiple tenants were ever
+// stored in the same blob (defence-in-depth).
 
 import { getProfile } from './dokanProfile'
 import { seedFor } from './verticals'
 
-const STORAGE_KEY = 'dokanbhai-local-db-v1'
+const LEGACY_KEY = 'dokanbhai-local-db-v1'
+const MIGRATED_PREFIX = 'dokanbhai-local-db-migrated-'
+
+let currentPhone = ''
+export function setCurrentPhone(p) {
+  currentPhone = (p || '').replace(/\D/g, '')
+}
+export function getCurrentPhone() {
+  return currentPhone
+}
+
+const safePhone = () => currentPhone || 'anon'
+const STORAGE_KEY = () => `dokanbhai-local-db_${safePhone()}`
+const MIGRATED_KEY = () => `${MIGRATED_PREFIX}${safePhone()}`
 
 const seed = () => {
   const profile = getProfile()
   const bizType = profile?.store?.businessType || 'mudi'
+  const phone = profile?.session?.phone || currentPhone || ''
   // For legacy installs (no profile), use the legacy Mudi seed so existing
   // users see no data loss. When a profile exists, return a minimal business
   // row and let vertical.seedFor() populate categories/vendors/products.
   if (!profile) return legacyMudiSeed()
   return {
     businesses: [
-      { id: 'biz-1', name: profile.store.businessLabel || 'DokanBhai', business_type: bizType, owner_user_id: 'local-user', invite_code: 'DOKAN-2025', address: profile.store.region || '', phone: profile.session.phone || '', created_at: new Date().toISOString() }
+      {
+        id: 'biz-1',
+        name: profile.store.businessLabel || 'DokanBhai',
+        business_type: bizType,
+        owner_user_id: phone || 'local-user',
+        invite_code: 'DOKAN-2025',
+        address: profile.store.region || '',
+        phone,
+        created_at: new Date().toISOString(),
+      },
     ],
     categories: [],
     vendors: [],
@@ -59,7 +92,7 @@ const legacyMudiSeed = () => ({
     { id: 'p-1', name: 'Teer Soyabean Oil 5L',     category_id: 'cat-2', vendor_id: 'v-1', cost_price: 950,   sale_price: 1050, stock: 60,  min_stock: 12, unit: 'litre', created_at: new Date().toISOString() },
     { id: 'p-2', name: 'Miniket Rice 25kg',        category_id: 'cat-1', vendor_id: 'v-1', cost_price: 1850,  sale_price: 2050, stock: 28,  min_stock: 10, unit: 'bag',   created_at: new Date().toISOString() },
     { id: 'p-3', name: 'ACI Pure Salt 1kg',        category_id: 'cat-3', vendor_id: 'v-2', cost_price: 28,    sale_price: 35,   stock: 240, min_stock: 40, unit: 'pcs', created_at: new Date().toISOString() },
-    { id: 'p-4', name: 'Deshi Masoor Dal 1kg',     category_id: 'cat-3', vendor_id: 'v-2', cost_price: 130,   sale_price: 160,  stock: 45,  min_stock: 15, unit: 'kg',    created_at: new Date().toISOString() },
+    { id: 'p-4', name: 'Deshi Maslor Dal 1kg',     category_id: 'cat-3', vendor_id: 'v-2', cost_price: 130,   sale_price: 160,  stock: 45,  min_stock: 15, unit: 'kg',    created_at: new Date().toISOString() },
     { id: 'p-5', name: 'Pushti Atta 2kg',          category_id: 'cat-1', vendor_id: 'v-3', cost_price: 110,   sale_price: 135,  stock: 80,  min_stock: 20, unit: 'pack',  created_at: new Date().toISOString() },
     { id: 'p-6', name: 'Dano Daily Pushti Milk Powder 1kg', category_id: 'cat-3', vendor_id: 'v-2', cost_price: 580, sale_price: 650, stock: 18, min_stock: 10, unit: 'pack', created_at: new Date().toISOString() },
     { id: 'p-7', name: 'Rin Washing Powder 1kg',   category_id: 'cat-5', vendor_id: 'v-2', cost_price: 175,   sale_price: 210,  stock: 65,  min_stock: 15, unit: 'pcs', created_at: new Date().toISOString() },
@@ -70,7 +103,7 @@ const legacyMudiSeed = () => ({
   transactions: [
     { id: 't-1', type: 'sale', customer_id: 'cu-1', product_id: 'p-2', product_name: 'Miniket Rice 25kg', qty: 1, unit_price: 2050, amount: 2050, discount: 50, paid_amount: 2000, pay_type: 'cash', note: '', date: new Date().toISOString() },
     { id: 't-2', type: 'sale', customer_id: 'cu-2', product_id: 'p-1', product_name: 'Teer Soyabean Oil 5L', qty: 2, unit_price: 1050, amount: 2100, discount: 0, paid_amount: 850, pay_type: 'credit', note: '', date: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { id: 't-3', type: 'sale', customer_id: 'cu-4', product_id: 'p-4', product_name: 'Deshi Masoor Dal 1kg', qty: 5, unit_price: 160, amount: 800, discount: 0, paid_amount: 0, pay_type: 'credit', note: '', date: new Date(Date.now() - 86400000).toISOString() },
+    { id: 't-3', type: 'sale', customer_id: 'cu-4', product_id: 'p-4', product_name: 'Deshi Maslor Dal 1kg', qty: 5, unit_price: 160, amount: 800, discount: 0, paid_amount: 0, pay_type: 'credit', note: '', date: new Date(Date.now() - 86400000).toISOString() },
     { id: 't-4', type: 'sale', customer_id: 'cu-3', product_id: 'p-7', product_name: 'Rin Washing Powder 1kg', qty: 2, unit_price: 210, amount: 420, discount: 20, paid_amount: 400, pay_type: 'cash', note: '', date: new Date().toISOString() },
   ],
   payments: [
@@ -81,13 +114,30 @@ const legacyMudiSeed = () => ({
 
 const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 
+// One-time migration: copy legacy blob into the per-tenant key. Idempotent.
+const migrateLegacyIfNeeded = () => {
+  if (typeof window === 'undefined') return null
+  if (!currentPhone) return null
+  if (localStorage.getItem(MIGRATED_KEY()) === '1') return null
+  const raw = localStorage.getItem(LEGACY_KEY)
+  if (raw) {
+    if (!localStorage.getItem(STORAGE_KEY())) {
+      localStorage.setItem(STORAGE_KEY(), raw)
+    }
+  }
+  localStorage.setItem(MIGRATED_KEY(), '1')
+  return raw
+}
+
 function load() {
   if (typeof window === 'undefined') return seed()
+  // Trigger one-time migration before reading so the new key is populated.
+  migrateLegacyIfNeeded()
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY())
     if (!raw) {
       const data = seed()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      localStorage.setItem(STORAGE_KEY(), JSON.stringify(data))
       return data
     }
     const parsed = JSON.parse(raw)
@@ -100,8 +150,6 @@ function load() {
   }
 }
 
-// populateVerticalSeed is called from the context API after onboarding to
-// turn a minimal empty workspace into a vertical-ready catalog. Idempotent.
 function populateVerticalSeed(businessType) {
   if (!businessType) return
   const api = {
@@ -120,7 +168,7 @@ function populateVerticalSeed(businessType) {
 
 function save(db) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
+    localStorage.setItem(STORAGE_KEY(), JSON.stringify(db))
   }
 }
 
@@ -134,9 +182,15 @@ let db = load()
 
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY && e.newValue) {
-      db = JSON.parse(e.newValue)
-      notify()
+    // Pick up changes to *any* per-tenant key (including the legacy fallback
+    // for backwards compatibility) so other tabs stay in sync.
+    if (!e.key) return
+    if (!e.newValue) return
+    if (e.key === STORAGE_KEY() || e.key === LEGACY_KEY) {
+      try {
+        db = JSON.parse(e.newValue)
+        notify()
+      } catch { /* ignore */ }
     }
   })
 }
@@ -147,15 +201,33 @@ function withNotified(mutator) {
   notify()
 }
 
+// Filter rows by the active tenant. Rows without a phone (legacy seed rows)
+// are visible to any tenant — they exist only in the legacy blob and are
+// never written by the new code.
+const tenantFilter = (rows) => {
+  if (!currentPhone) return rows || []
+  return (rows || []).filter((r) => r && (r.phone === currentPhone || r.phone == null))
+}
+
+// Stamp the current tenant on a record so future reads can filter it.
+const stampTenant = (record) => {
+  if (!currentPhone) return { ...record }
+  if (record && record.phone != null) return record
+  return { ...record, phone: currentPhone }
+}
+
 export const localDb = {
   list(table) {
-    return [...(db[table] || [])]
+    return tenantFilter(db[table] || [])
   },
   get(table, id) {
-    return (db[table] || []).find((r) => r.id === id) || null
+    const row = (db[table] || []).find((r) => r.id === id) || null
+    if (!row) return null
+    if (currentPhone && row.phone && row.phone !== currentPhone) return null
+    return row
   },
   insert(table, record) {
-    const row = { id: record.id || uid(table.slice(0, 3)), created_at: new Date().toISOString(), ...record }
+    const row = { id: record.id || uid(table.slice(0, 3)), created_at: new Date().toISOString(), ...stampTenant(record) }
     withNotified((d) => { (d[table] = d[table] || []).push(row) })
     return row
   },
@@ -165,7 +237,10 @@ export const localDb = {
       const arr = d[table] || []
       const idx = arr.findIndex((r) => r.id === id)
       if (idx >= 0) {
-        arr[idx] = { ...arr[idx], ...patch, updated_at: new Date().toISOString() }
+        // Tenant guard: do not let one tenant overwrite another tenant's row.
+        const existing = arr[idx]
+        if (currentPhone && existing.phone && existing.phone !== currentPhone) return
+        arr[idx] = { ...existing, ...patch, updated_at: new Date().toISOString() }
         updated = arr[idx]
       }
     })
@@ -173,7 +248,13 @@ export const localDb = {
   },
   remove(table, id) {
     withNotified((d) => {
-      d[table] = (d[table] || []).filter((r) => r.id !== id)
+      const arr = d[table] || []
+      const idx = arr.findIndex((r) => r.id === id)
+      if (idx >= 0) {
+        const existing = arr[idx]
+        if (currentPhone && existing.phone && existing.phone !== currentPhone) return
+        d[table] = arr.filter((r) => r.id !== id)
+      }
     })
   },
   createSale({ customer_id, items, discount = 0, paid_amount, pay_type = 'cash', note = '', date }) {
@@ -190,6 +271,7 @@ export const localDb = {
     const due = Math.max(0, total - paid)
     const transactions = []
     const saleDate = date || new Date().toISOString()
+    const tenantStamp = currentPhone ? { phone: currentPhone } : {}
 
     lineItems.forEach((it) => {
       const meta = [
@@ -210,6 +292,7 @@ export const localDb = {
         pay_type,
         note: meta ? (note ? `${note} · ${meta}` : meta) : note,
         date: saleDate,
+        ...tenantStamp,
       })
       const p = (db.products || []).find((p) => p.id === it.product_id)
       if (p) p.stock = Math.max(0, (p.stock || 0) - Number(it.qty))
@@ -226,6 +309,7 @@ export const localDb = {
         pay_type,
         note: note || `Sale payment (${pay_type})`,
         date: saleDate,
+        ...tenantStamp,
       })
     }
 
@@ -242,11 +326,14 @@ export const localDb = {
       pay_type,
       note,
       date: saleDate,
+      ...tenantStamp,
     }
 
-    const cust = (db.customers || []).find((c) => c.id === customer_id)
-    if (cust) {
-      cust.balance = (cust.balance || 0) + due
+    if (customer_id) {
+      const cust = (db.customers || []).find((c) => c.id === customer_id)
+      if (cust) {
+        cust.balance = (cust.balance || 0) + due
+      }
     }
 
     withNotified((d) => {
@@ -258,6 +345,7 @@ export const localDb = {
   },
   recordPayment({ customer_id, amount, note = '', date }) {
     const amt = Number(amount || 0)
+    const tenantStamp = currentPhone ? { phone: currentPhone } : {}
     const payment = {
       id: uid('pay'),
       type: 'payment',
@@ -267,10 +355,13 @@ export const localDb = {
       pay_type: 'cash',
       note,
       date: date || new Date().toISOString(),
+      ...tenantStamp,
     }
-    const cust = (db.customers || []).find((c) => c.id === customer_id)
-    if (cust) {
-      cust.balance = Math.max(0, (cust.balance || 0) - amt)
+    if (customer_id) {
+      const cust = (db.customers || []).find((c) => c.id === customer_id)
+      if (cust) {
+        cust.balance = Math.max(0, (cust.balance || 0) - amt)
+      }
     }
     withNotified((d) => { d.transactions = [...(d.transactions || []), payment] })
     return payment
