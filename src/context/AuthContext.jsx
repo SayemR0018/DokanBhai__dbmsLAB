@@ -11,11 +11,14 @@ const AuthContext = createContext(null)
 // flow and would constantly wipe the user state.
 const STORAGE_KEY = 'dokanbhai-auth-session'
 
+const ADMIN_PHONE = '01700000000'
+
 const buildUser = (phone, profile) => ({
   id: profile?.session?.phone || phone || 'local-user',
   phone,
   name: profile?.store?.ownerName || profile?.session?.displayName || 'Owner',
   role: 'owner',
+  isAdmin: (phone || '').replace(/\D/g, '') === ADMIN_PHONE,
   businessType: profile?.store?.businessType || 'mudi',
   businessLabel: profile?.store?.businessLabel || '',
 })
@@ -91,9 +94,14 @@ export function AuthProvider({ children }) {
       }
     }
 
-    if (!matched) {
-      return { ok: false, error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / This number is not registered on this device' }
-    }
+    const isAdminPhone = cleanPhone === ADMIN_PHONE
+
+if (!matched && !isAdminPhone) {
+  return {
+    ok: false,
+    error: 'নিবন্ধিত নম্বরের সাথে মিলছে না / This number is not registered on this device'
+  }
+}
 
     const u = buildUser(cleanPhone, profile)
     setUser(u)

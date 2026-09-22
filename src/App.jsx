@@ -3,12 +3,17 @@ import { useAuth } from './context/AuthContext'
 import { useProfile } from './context/ProfileContext'
 import data from './lib/data'
 import AppShell from './components/AppShell'
+import AdminProtected from './components/AdminProtected'
 import OnboardingModal from './components/OnboardingModal'
 import PhoneGateScreen from './components/PhoneGateScreen'
 import { Spinner } from './components/ui'
 
 import DashboardScreen from './pages/DashboardScreen'
 import InventoryScreen from './pages/InventoryScreen'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminShops from './pages/admin/AdminShops'
+import AdminProducts from './pages/admin/AdminProducts'
+import AdminReports from './pages/admin/AdminReports'
 import CategoriesScreen from './pages/CategoriesScreen'
 import VendorsScreen from './pages/VendorsScreen'
 import NewSaleScreen from './pages/NewSaleScreen'
@@ -75,6 +80,36 @@ export default function App() {
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Protected><DashboardScreen /></Protected>} />
+      <Route path="/admin/dashboard" element={  
+        <AdminProtected>
+      <AdminDashboard />
+    </AdminProtected>} />
+    <Route
+  path="/admin/shops"
+  element={
+    <AdminProtected>
+      <AdminShops />
+    </AdminProtected>
+  }
+/>
+
+<Route
+  path="/admin/products"
+  element={
+    <AdminProtected>
+      <AdminProducts />
+    </AdminProtected>
+  }
+/>
+
+<Route
+  path="/admin/reports"
+  element={
+    <AdminProtected>
+      <AdminReports />
+    </AdminProtected>
+  }
+/>
       <Route path="/pos" element={<Protected><NewSaleScreen /></Protected>} />
       <Route path="/inventory" element={<Protected><InventoryScreen /></Protected>} />
       <Route path="/sales" element={<Protected><SalesScreen /></Protected>} />
