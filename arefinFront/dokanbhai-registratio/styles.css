@@ -1,0 +1,1603 @@
+* {
+  box-sizing: border-box;
+}
+
+
+:root {
+
+  --green: #087653;
+
+  --green-dark: #006b4f;
+
+  --page: #f6f7fb;
+
+  --soft: #eef1ff;
+
+  --ink: #17251f;
+
+  --muted: #66736e;
+
+  --danger: #e84b43;
+
+}
+
+
+html,
+body,
+#root {
+
+  min-height: 100%;
+
+}
+
+
+body {
+
+  margin: 0;
+
+  font-family:
+    "Hind Siliguri",
+    "Inter",
+    sans-serif;
+
+  color: var(--ink);
+
+  background: var(--page);
+
+}
+
+
+button,
+input,
+select {
+
+  font: inherit;
+
+}
+
+
+button {
+
+  cursor: pointer;
+
+}
+
+
+a {
+
+  color: inherit;
+
+  text-decoration: none;
+
+}
+
+
+.page-shell {
+
+  min-height: 100vh;
+
+}
+
+
+
+/* =================================
+   HEADER
+================================= */
+
+
+.topbar {
+
+  height: 74px;
+
+  padding: 0 30px;
+
+  display: grid;
+
+  grid-template-columns:
+    280px 1fr 340px;
+
+  align-items: center;
+
+  background: #ffffff;
+
+  border-bottom:
+    1px solid #edf0f4;
+
+}
+
+
+
+/* =================================
+   LOGO
+================================= */
+
+
+.brand {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+}
+
+
+/* green square */
+
+.brand-mark {
+
+  width: 43px;
+
+  height: 43px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #00775d;
+
+  border-radius: 11px;
+
+}
+
+
+/* inner white rectangle */
+
+.brand-mark span {
+
+  width: 22px;
+
+  height: 25px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+
+    1.5px solid
+    #ffffff;
+
+  border-radius: 4px;
+
+  color: #ffd21c;
+
+  font-family:
+    "Inter",
+    sans-serif;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  line-height: 1;
+
+}
+
+
+/* logo text */
+
+.brand-text {
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  line-height: 1;
+
+}
+
+
+/* দোকানভাই */
+
+.brand-text strong {
+
+  margin: 0;
+
+  color: #172127;
+
+  font-family:
+    "Hind Siliguri",
+    sans-serif;
+
+  font-size: 21px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  white-space: nowrap;
+
+}
+
+
+/* DOKANBHAI */
+
+.brand-text span {
+
+  margin-top: 5px;
+
+  color: #00775d;
+
+  font-family:
+    "Inter",
+    sans-serif;
+
+  font-size: 10px;
+
+  line-height: 11px;
+
+  font-weight: 600;
+
+  letter-spacing: 0.35px;
+
+}
+
+
+
+/* =================================
+   NAVIGATION
+================================= */
+
+
+.nav {
+
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 28px;
+
+}
+
+
+.nav a {
+
+  color: #26342e;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  padding: 8px 12px;
+
+  border-radius: 7px;
+
+}
+
+
+.nav a.active {
+
+  color: var(--green);
+
+  background: #e8f0ff;
+
+}
+
+
+
+/* =================================
+   RIGHT HEADER
+================================= */
+
+
+.header-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-end;
+
+  gap: 12px;
+
+}
+
+
+.help-pill {
+
+  height: 43px;
+
+  padding: 0 14px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background: #f0f2ff;
+
+  color: #33413b;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+}
+
+
+.headset {
+
+  font-size: 18px;
+
+  color: var(--green);
+
+}
+
+
+.help-pill small {
+
+  display: block;
+
+  color: #78827e;
+
+  font-size: 9px;
+
+}
+
+
+.help-pill strong {
+
+  display: block;
+
+  font-size: 11px;
+
+}
+
+
+.lang-switch {
+
+  padding: 4px;
+
+  display: flex;
+
+  gap: 3px;
+
+  background: #f0f2ff;
+
+  border-radius: 11px;
+
+}
+
+
+.lang-switch button {
+
+  height: 34px;
+
+  min-width: 37px;
+
+  border: 0;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #5d6964;
+
+  font-size: 11px;
+
+}
+
+
+.lang-switch button.selected {
+
+  background: #ffffff;
+
+  color: var(--green);
+
+  font-weight: 700;
+
+}
+
+
+.user-btn {
+
+  width: 42px;
+
+  height: 42px;
+
+  border: 0;
+
+  border-radius: 50%;
+
+  background: var(--green-dark);
+
+  color: white;
+
+  font-size: 19px;
+
+}
+
+
+
+/* =================================
+   SPACING
+================================= */
+
+
+.hero-space {
+
+  height: 88px;
+
+}
+
+
+.content-wrap {
+
+  padding:
+
+    0 19px 14px;
+
+}
+
+
+
+/* =================================
+   MAIN CARD
+================================= */
+
+
+.registration-card {
+
+  max-width: 1440px;
+
+  min-height: 770px;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    42% 58%;
+
+  overflow: hidden;
+
+  border-radius: 14px;
+
+  background: white;
+
+  box-shadow:
+    0 5px 18px
+    rgba(41, 50, 45, 0.08);
+
+}
+
+
+
+/* =================================
+   LEFT GREEN SIDE
+================================= */
+
+
+.left-panel {
+
+  min-width: 0;
+
+  padding:
+    28px 28px 24px;
+
+  color: white;
+
+  background:
+
+    radial-gradient(
+      circle at 92% 86%,
+      rgba(44, 201, 145, 0.22),
+      transparent 28%
+    ),
+
+    linear-gradient(
+      150deg,
+      #0a7956 0%,
+      #0a7b55 52%,
+      #11845d 100%
+    );
+
+  display: flex;
+
+  flex-direction: column;
+
+}
+
+
+.trial-pill {
+
+  align-self: flex-start;
+
+  padding:
+    6px 14px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255,255,255,0.13);
+
+  color: #e6fff5;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+}
+
+
+.left-panel h1 {
+
+  margin:
+
+    22px 0 8px;
+
+  max-width: 500px;
+
+  font-size: 41px;
+
+  line-height: 1.09;
+
+  letter-spacing: -1px;
+
+  font-weight: 700;
+
+}
+
+
+.left-intro {
+
+  max-width: 505px;
+
+  margin: 0;
+
+  color: #d4f3e5;
+
+  font-size: 15px;
+
+  line-height: 1.55;
+
+}
+
+
+
+/* BENEFITS */
+
+
+.benefit-list {
+
+  margin-top: 28px;
+
+  display: grid;
+
+  gap: 14px;
+
+}
+
+
+.benefit {
+
+  min-height: 62px;
+
+  padding: 10px 12px;
+
+  display: grid;
+
+  grid-template-columns:
+    42px 1fr;
+
+  gap: 13px;
+
+  align-items: center;
+
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,0.08);
+
+}
+
+
+.benefit-icon {
+
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 9px;
+
+  display: grid;
+
+  place-items: center;
+
+  background:
+    rgba(255,255,255,0.12);
+
+  color: #e8fff6;
+
+  font-size: 21px;
+
+}
+
+
+.benefit h3 {
+
+  margin: 0 0 1px;
+
+  font-size: 17px;
+
+  line-height: 1.15;
+
+}
+
+
+.benefit p {
+
+  margin: 0;
+
+  color: #caeddf;
+
+  font-size: 12px;
+
+  line-height: 1.35;
+
+}
+
+
+
+/* TESTIMONIAL */
+
+
+.testimonial {
+
+  margin-top: auto;
+
+  padding: 17px;
+
+  display: grid;
+
+  grid-template-columns:
+    52px 1fr;
+
+  gap: 14px;
+
+  align-items: center;
+
+  border-radius: 12px;
+
+  background:
+    rgba(255,255,255,0.13);
+
+}
+
+
+.avatar {
+
+  width: 52px;
+
+  height: 52px;
+
+  border-radius: 50%;
+
+  display: grid;
+
+  place-items: center;
+
+  background: #d8c0a1;
+
+  font-size: 23px;
+
+}
+
+
+.quote {
+
+  font-size: 14px;
+
+  line-height: 1.3;
+
+  font-style: italic;
+
+  font-weight: 600;
+
+}
+
+
+.quote-by {
+
+  margin-top: 4px;
+
+  font-size: 10px;
+
+  color: #d7f0e6;
+
+}
+
+
+.left-bottom {
+
+  padding:
+    15px 5px 0;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  color: #d6efe5;
+
+  font-size: 10px;
+
+}
+
+
+
+/* =================================
+   RIGHT FORM
+================================= */
+
+
+.form-panel {
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  background: white;
+
+}
+
+
+.form-content {
+
+  padding:
+    28px 28px 20px;
+
+  flex: 1;
+
+}
+
+
+
+/* FORM HEADER */
+
+
+.form-banner {
+
+  min-height: 84px;
+
+  padding:
+    17px 16px;
+
+  border-radius: 13px;
+
+  background: #eef1ff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 18px;
+
+}
+
+
+.form-banner small {
+
+  color: var(--green);
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+}
+
+
+.form-banner h2 {
+
+  margin: 2px 0 0;
+
+  font-size: 23px;
+
+  line-height: 1.15;
+
+  color: #1b2923;
+
+}
+
+
+.step-area {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+}
+
+
+.step-chip {
+
+  height: 28px;
+
+  padding:
+    0 11px;
+
+  border: 0;
+
+  border-radius: 6px;
+
+  background: var(--green);
+
+  color: white;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+}
+
+
+.step-chip.muted {
+
+  background: #e5eafb;
+
+  color: #6d7873;
+
+}
+
+
+.step-arrow {
+
+  color: #97a49e;
+
+  font-size: 18px;
+
+}
+
+
+
+/* =================================
+   FORM
+================================= */
+
+
+.form-grid {
+
+  margin-top: 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:
+    14px 14px;
+
+}
+
+
+.field {
+
+  min-width: 0;
+
+}
+
+
+.field.full {
+
+  grid-column:
+    1 / -1;
+
+}
+
+
+.field label {
+
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #17261f;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+}
+
+
+.field label .en {
+
+  color: #58635e;
+
+  font-weight: 400;
+
+}
+
+
+.req {
+
+  color: var(--danger);
+
+}
+
+
+
+/* INPUT */
+
+
+.input-shell {
+
+  width: 100%;
+
+  height: 50px;
+
+  padding:
+    0 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  border-radius: 9px;
+
+  background: #eef1ff;
+
+  color: #27342e;
+
+}
+
+
+.leading {
+
+  flex: 0 0 auto;
+
+  color: #728079;
+
+  font-size: 18px;
+
+}
+
+
+.input-shell input,
+.input-shell select {
+
+  flex: 1;
+
+  min-width: 0;
+
+  height: 100%;
+
+  border: 0;
+
+  outline: 0;
+
+  background: transparent;
+
+  color: #27342e;
+
+  font-size: 14px;
+
+}
+
+
+.input-shell input::placeholder {
+
+  color: #68756f;
+
+}
+
+
+.phone-code {
+
+  padding-right: 11px;
+
+  border-right:
+    1px solid #d7dcec;
+
+  white-space: nowrap;
+
+  font-family:
+    "Inter",
+    sans-serif;
+
+  font-size: 12px;
+
+}
+
+
+
+/* BUSINESS TYPES */
+
+
+.business-types {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 6px;
+
+}
+
+
+.type-btn {
+
+  min-height: 50px;
+
+  padding:
+    7px 10px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background: #e9edff;
+
+  color: #2e3935;
+
+  font-size: 11px;
+
+  line-height: 1.2;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+}
+
+
+.type-btn.selected {
+
+  color: white;
+
+  background: var(--green);
+
+}
+
+
+.type-btn:nth-child(5) {
+
+  grid-column:
+    1 / 2;
+
+}
+
+
+
+/* HELPERS */
+
+
+.helper {
+
+  margin-top: 5px;
+
+  color: #78827e;
+
+  font-size: 10px;
+
+  line-height: 1.35;
+
+}
+
+
+.referral {
+
+  margin-top: 12px;
+
+  color: var(--green);
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+}
+
+
+
+/* TERMS */
+
+
+.terms {
+
+  margin-top: 20px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  color: #4c5853;
+
+  font-size: 12px;
+
+  line-height: 1.35;
+
+}
+
+
+.terms input {
+
+  width: 17px;
+
+  height: 17px;
+
+  margin-top: 1px;
+
+  accent-color: var(--green);
+
+}
+
+
+.terms strong {
+
+  color: var(--green);
+
+}
+
+
+
+/* SUBMIT */
+
+
+.submit-btn {
+
+  width: 100%;
+
+  height: 56px;
+
+  margin-top: 10px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background: var(--green-dark);
+
+  color: white;
+
+  font-size: 16px;
+
+  font-weight: 700;
+
+  box-shadow:
+
+    0 4px 10px
+
+    rgba(
+      6,
+      105,
+      73,
+      0.18
+    );
+
+}
+
+
+.submit-btn:hover {
+
+  background: #045d3f;
+
+}
+
+
+.submit-btn:disabled {
+
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+}
+
+
+
+/* LOGIN STRIP */
+
+
+.login-strip {
+
+  min-height: 54px;
+
+  padding:
+    0 28px;
+
+  background: #eef1ff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  color: #5c6863;
+
+  font-size: 12px;
+
+}
+
+
+.login-strip strong {
+
+  color: var(--green);
+
+}
+
+
+.login-strip .support {
+
+  font-size: 10px;
+
+  white-space: nowrap;
+
+}
+
+
+
+/* =================================
+   BOTTOM FEATURES
+================================= */
+
+
+.bottom-features {
+
+  max-width: 1440px;
+
+  margin:
+    16px auto 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 14px;
+
+}
+
+
+.bottom-feature {
+
+  min-height: 67px;
+
+  padding:
+    12px 16px;
+
+  display: grid;
+
+  grid-template-columns:
+    28px 1fr;
+
+  gap: 10px;
+
+  align-items: center;
+
+  border:
+    1px solid #ebedf2;
+
+  border-radius: 11px;
+
+  background: white;
+
+}
+
+
+.bottom-feature .icon {
+
+  color: var(--green);
+
+  font-size: 22px;
+
+}
+
+
+.bottom-feature h4 {
+
+  margin: 0;
+
+  font-size: 12px;
+
+  line-height: 1.15;
+
+}
+
+
+.bottom-feature p {
+
+  margin:
+    2px 0 0;
+
+  color: #68746f;
+
+  font-size: 10px;
+
+  line-height: 1.2;
+
+}
+
+
+
+/* =================================
+   RESPONSIVE
+================================= */
+
+
+@media (max-width: 1150px) {
+
+  .topbar {
+
+    grid-template-columns:
+      230px 1fr auto;
+
+  }
+
+
+  .nav {
+
+    gap: 10px;
+
+  }
+
+
+  .registration-card {
+
+    grid-template-columns:
+      40% 60%;
+
+  }
+
+
+  .left-panel h1 {
+
+    font-size: 34px;
+
+  }
+
+
+  .business-types {
+
+    grid-template-columns:
+      repeat(2, 1fr);
+
+  }
+
+
+  .type-btn:nth-child(5) {
+
+    grid-column: auto;
+
+  }
+
+}
+
+
+
+@media (max-width: 900px) {
+
+  .topbar {
+
+    grid-template-columns:
+      1fr auto;
+
+  }
+
+
+  .nav {
+
+    display: none;
+
+  }
+
+
+  .hero-space {
+
+    height: 35px;
+
+  }
+
+
+  .registration-card {
+
+    grid-template-columns: 1fr;
+
+  }
+
+
+  .left-panel {
+
+    min-height: 620px;
+
+  }
+
+
+  .bottom-features {
+
+    grid-template-columns:
+      repeat(2, 1fr);
+
+  }
+
+}
+
+
+
+@media (max-width: 650px) {
+
+  .topbar {
+
+    height: auto;
+
+    min-height: 68px;
+
+    padding:
+      9px 12px;
+
+  }
+
+
+  .brand-mark {
+
+    width: 39px;
+
+    height: 39px;
+
+    border-radius: 10px;
+
+  }
+
+
+  .brand-mark span {
+
+    width: 20px;
+
+    height: 23px;
+
+    font-size: 12px;
+
+  }
+
+
+  .brand-text strong {
+
+    font-size: 18px;
+
+    line-height: 19px;
+
+  }
+
+
+  .brand-text span {
+
+    font-size: 8px;
+
+    margin-top: 4px;
+
+  }
+
+
+  .help-pill {
+
+    display: none;
+
+  }
+
+
+  .content-wrap {
+
+    padding:
+      0 10px 12px;
+
+  }
+
+
+  .hero-space {
+
+    height: 20px;
+
+  }
+
+
+  .registration-card {
+
+    border-radius: 10px;
+
+  }
+
+
+  .left-panel,
+  .form-content {
+
+    padding:
+      22px 17px;
+
+  }
+
+
+  .left-panel h1 {
+
+    font-size: 31px;
+
+  }
+
+
+  .form-banner {
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+  }
+
+
+  .form-grid {
+
+    grid-template-columns: 1fr;
+
+  }
+
+
+  .field.full {
+
+    grid-column: 1;
+
+  }
+
+
+  .business-types {
+
+    grid-template-columns: 1fr;
+
+  }
+
+
+  .login-strip {
+
+    padding:
+      13px 17px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+  }
+
+
+  .bottom-features {
+
+    grid-template-columns: 1fr;
+
+  }
+
+
+  .left-bottom {
+
+    flex-direction: column;
+
+  }
+
+}
