@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>দোকান ভাই — লগইন</title>
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+
+  <link rel="stylesheet" href="style.css">
+
+
+  <!-- React without Vite -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+
+<body>
+  <div id="root"></div>
+
+
+  <script type="text/babel">
+    const { useState } = React;
+
+
+    function Feature({ icon, title, text }) {
+      return (
+        <div className="feature">
+          <div className="feature-icon">{icon}</div>
+          <div>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </div>
+        </div>
+      );
+    }
+
+
+    function App() {
+      const [phone, setPhone] = useState("");
+      const [method, setMethod] = useState("sms");
+      const [sent, setSent] = useState(false);
+
+
+      function submit(e) {
+        e.preventDefault();
+        if (!phone.trim()) {
+          alert("দয়া করে মোবাইল নম্বর দিন।");
+          return;
+        }
+        setSent(true);
+      }
+
+
+      return (
+        <div className="page">
+
+
+          <header className="topbar">
+            <div className="brand">
+              <div className="brand-mark">D</div>
+              <div className="brand-text">
+                <strong>দোকানভাই</strong>
+                <span>DokanBhai</span>
+              </div>
+            </div>
+
+
+            <nav className="nav">
+              <a href="#">হোম পেজ</a>
+              <a className="active" href="#login">লগইন</a>
+              <a href="#">রেজিস্ট্রেশন</a>
+            </nav>
+
+
+            <div className="top-actions">
+             
+              <div className="language">
+                <button className="selected">বাং</button>
+                <button>EN</button>
+              </div>
+            </div>
+          </header>
+
+
+          <main className="main">
+            <section className="login-card">
+
+
+              <aside className="welcome">
+                <div className="badge">● DOKANBHAI</div>
+
+
+                <h1>দোকান ভাই-এ<br/>স্বাগতম</h1>
+
+
+                <p className="intro">
+                  আপনার দোকানের বিক্রি, বাকি ও পণ্যের হিসাব রাখুন সহজে।
+                </p>
+
+
+                <div className="features">
+                  <Feature
+                    icon="৳"
+                    title="বাকি খাতা ও ক্রেডিটের সহজ হিসাব"
+                    text="এক জায়গায় রাখুন সকল বাকি ও পাওনার তথ্য"
+                  />
+
+
+                  <Feature
+                    icon="▣"
+                    title="দ্রুত ইনভেন্টরি ও বিক্রয় পরিচালনা"
+                    text="স্টক, বিক্রি ও পণ্যের হিসাব থাকুক সবসময় আপডেট"
+                  />
+
+
+                  <Feature
+                    icon="✓"
+                    title="১০০% স্বচ্ছতার সাথে ডিজিটাল হিসাব"
+                    text="আপনার ব্যবসার গুরুত্বপূর্ণ তথ্য থাকুক নিরাপদ"
+                  />
+
+
+                  <Feature
+                    icon="⌁"
+                    title="বিক্রয়ের সহজ ব্যবস্থাপনা ও ডিজিটাল রিপোর্ট"
+                    text="দিন শেষে বিক্রয়, বাকি ও ক্যাশের হিসাব দেখুন"
+                  />
+                </div>
+
+
+                <div className="glow"></div>
+              </aside>
+
+
+              <section className="form-area">
+                <div className="form-content">
+
+
+                  <div className="form-heading">
+                    <div className="eyebrow">দোকানভাইয়ের সদস্য</div>
+                    <h2>লগ ইন করুন</h2>
+                    <p>আপনার সক্রিয় দোকানের মোবাইল নম্বর দিয়ে প্রবেশ করুন</p>
+                  </div>
+
+
+                  <button className="otp-info">
+                    ▣ মোবাইল ও ওটিপি (OTP)
+                  </button>
+
+
+                  <form onSubmit={submit}>
+                    <label>
+                      মোবাইল নম্বর
+                      <span>বাংলাদেশ (+880)</span>
+                    </label>
+
+
+                    <div className="phone-input">
+                      <div className="country">
+                        🇧🇩 <b>+880</b>
+                      </div>
+
+
+                      <input
+                        type="tel"
+                        placeholder="01XXXXXXXXX"
+                        value={phone}
+                        onChange={(e) =>
+                          setPhone(
+                            e.target.value
+                              .replace(/[^0-9]/g, "")
+                              .slice(0, 11)
+                          )
+                        }
+                      />
+                    </div>
+
+
+                    <label className="method-label">
+                      ওটিপি পাওয়ার মাধ্যম বাছাই করুন
+                    </label>
+
+
+                    <div className="methods">
+
+
+                      <label className={"method " + (method === "sms" ? "chosen" : "")}>
+                        <input
+                          type="radio"
+                          name="method"
+                          checked={method === "sms"}
+                          onChange={() => setMethod("sms")}
+                        />
+                        <span className="radio"></span>
+                        <span>এসএমএস (SMS)</span>
+                      </label>
+
+
+                      <label className={"method " + (method === "whatsapp" ? "chosen" : "")}>
+                        <input
+                          type="radio"
+                          name="method"
+                          checked={method === "whatsapp"}
+                          onChange={() => setMethod("whatsapp")}
+                        />
+                        <span className="radio"></span>
+                        <span>হোয়াটসঅ্যাপ</span>
+                      </label>
+
+
+                    </div>
+
+
+                    <button className="submit" type="submit">
+                      {sent ? "ওটিপি পাঠানো হয়েছে ✓" : "ওটিপি কোড পাঠান →"}
+                    </button>
+                  </form>
+
+
+                </div>
+
+
+                <div className="help-strip">
+                  <span>নতুন দোকান-এ যোগ?</span>
+                  <a href="#">বিনামূল্যে নতুন দোকানের খাতা খুলুন →</a>
+                </div>
+
+
+                <div className="contact-strip">
+                  <span>◉ ২৪/৭ হেল্প সাপোর্ট এবং নিরাপদ ব্যবহার</span>
+                  <span>☎ সাহায্য: ০১৬৮২১৬৭৩৮২</span>
+                </div>
+
+
+              </section>
+            </section>
+          </main>
+
+
+        </div>
+      );
+    }
+
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
