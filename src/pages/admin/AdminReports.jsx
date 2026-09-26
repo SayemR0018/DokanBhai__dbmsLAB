@@ -7,11 +7,11 @@ export default function AdminReports() {
       <div className="mb-8">
 
         <h1 className="text-3xl font-bold text-slate-800">
-          Reports & Analytics
+          রিপোর্ট ও বিশ্লেষণ
         </h1>
 
         <p className="mt-2 text-slate-500">
-          Overview of platform sales and business performance.
+          প্ল্যাটফর্মের বিক্রয় এবং ব্যবসায়িক কার্যক্রমের সারসংক্ষেপ দেখুন।
         </p>
 
       </div>
@@ -20,7 +20,7 @@ export default function AdminReports() {
 
         <div className="rounded-xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">
-            Today's Sales
+            আজকের বিক্রয়
           </p>
 
           <h2 className="mt-2 text-3xl font-bold text-slate-800">
@@ -30,7 +30,7 @@ export default function AdminReports() {
 
         <div className="rounded-xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">
-            This Month
+            এই মাসের বিক্রয়
           </p>
 
           <h2 className="mt-2 text-3xl font-bold text-slate-800">
@@ -40,7 +40,7 @@ export default function AdminReports() {
 
         <div className="rounded-xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">
-            Average Sale
+            গড় বিক্রয়
           </p>
 
           <h2 className="mt-2 text-3xl font-bold text-slate-800">
@@ -53,14 +53,14 @@ export default function AdminReports() {
       <div className="mt-8 rounded-xl bg-white p-6 shadow-sm">
 
         <h2 className="text-xl font-semibold text-slate-800">
-          Sales Summary
+          বিক্রয়ের সারসংক্ষেপ
         </h2>
 
         <div className="mt-6 space-y-5">
 
           <div>
             <div className="mb-2 flex justify-between text-sm">
-              <span>Grocery Shops</span>
+              <span>মুদি দোকান</span>
               <span>60%</span>
             </div>
 
@@ -71,7 +71,7 @@ export default function AdminReports() {
 
           <div>
             <div className="mb-2 flex justify-between text-sm">
-              <span>Fashion Shops</span>
+              <span>ফ্যাশন দোকান</span>
               <span>25%</span>
             </div>
 
@@ -82,7 +82,7 @@ export default function AdminReports() {
 
           <div>
             <div className="mb-2 flex justify-between text-sm">
-              <span>Other Businesses</span>
+              <span>অন্যান্য ব্যবসা</span>
               <span>15%</span>
             </div>
 

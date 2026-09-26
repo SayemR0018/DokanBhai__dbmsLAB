@@ -6,6 +6,7 @@ import AppShell from './components/AppShell'
 import AdminProtected from './components/AdminProtected'
 import OnboardingModal from './components/OnboardingModal'
 import PhoneGateScreen from './components/PhoneGateScreen'
+import AdminLogin from './pages/admin/AdminLogin'
 import { Spinner } from './components/ui'
 
 import DashboardScreen from './pages/DashboardScreen'
@@ -48,16 +49,17 @@ function LoginRoute() {
       </div>
     )
   }
-  // Already signed in — skip the gate and go straight to the dashboard.
+  
   if (user) return <Navigate to="/dashboard" replace />
   return <PhoneGateScreen />
 }
 
 export default function App() {
+  const isAdminRoute = window.location.pathname.startsWith('/admin')
   const { profile, complete, setProfile: setProfileCtx } = useProfile()
 
-  // First launch: block on onboarding modal until profile is complete.
-  if (!profile || !complete) {
+ 
+ if ((!profile || !complete) && !isAdminRoute)  {
     return (
       <>
         {/* Background shell behind the modal */}
@@ -77,7 +79,9 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/login" element={<LoginRoute />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Protected><DashboardScreen /></Protected>} />
       <Route path="/admin/dashboard" element={  
