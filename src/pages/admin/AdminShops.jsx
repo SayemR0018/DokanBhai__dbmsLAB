@@ -3,26 +3,26 @@ import React, { useState } from 'react'
 const shops = [
   {
     id: 1,
-    name: 'Rahman Store',
-    owner: 'Rahman',
+    name: 'রহমান স্টোর',
+    owner: 'রহমান',
     phone: '017XXXXXXXX',
-    type: 'Grocery',
+    type: 'মুদি',
     status: 'Active',
   },
   {
     id: 2,
-    name: 'Nila Fashion',
-    owner: 'Nila',
+    name: 'নীলা ফ্যাশন',
+    owner: 'নীলা',
     phone: '018XXXXXXXX',
-    type: 'Fashion',
+    type: 'ফ্যাশন',
     status: 'Active',
   },
   {
     id: 3,
-    name: 'City Pharmacy',
-    owner: 'Karim',
+    name: 'সিটি ফার্মেসি',
+    owner: 'করিম',
     phone: '019XXXXXXXX',
-    type: 'Pharmacy',
+    type: 'ফার্মেসি',
     status: 'Inactive',
   },
 ]
@@ -30,17 +30,17 @@ const shops = [
 const retailers = [
   {
     id: 1,
-    name: 'Hasan',
+    name: 'হাসান',
     phone: '016XXXXXXXX',
   },
   {
     id: 2,
-    name: 'Sakib',
+    name: 'সাকিব',
     phone: '015XXXXXXXX',
   },
   {
     id: 3,
-    name: 'Mim',
+    name: 'মিম',
     phone: '013XXXXXXXX',
   },
 ]
@@ -76,11 +76,11 @@ export default function AdminShops() {
       <div className="mb-6 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white shadow-lg">
 
         <h1 className="text-3xl font-bold">
-          Shop Management
+          দোকান ব্যবস্থাপনা
         </h1>
 
         <p className="mt-2 text-blue-100">
-          View and manage registered businesses and retailers.
+          নিবন্ধিত দোকান ও রিটেইলারদের তথ্য দেখুন এবং পরিচালনা করুন।
         </p>
 
       </div>
@@ -99,7 +99,7 @@ export default function AdminShops() {
 
             <input
               type="text"
-              placeholder="Search shop, owner or business type..."
+              placeholder="দোকান, মালিক অথবা ব্যবসার ধরন খুঁজুন..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-xl border border-blue-100 bg-blue-50/50 py-3 pl-11 pr-4 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
@@ -119,31 +119,31 @@ export default function AdminShops() {
               <tr className="bg-gradient-to-r from-blue-50 to-purple-50 text-sm text-slate-600">
 
                 <th className="rounded-l-lg px-4 py-4">
-                  Shop
+                  দোকান
                 </th>
 
                 <th className="px-4 py-4">
-                  Owner
+                  মালিক
                 </th>
 
                 <th className="px-4 py-4">
-                  Phone
+                  ফোন
                 </th>
 
                 <th className="px-4 py-4">
-                  Type
+                  ধরন
                 </th>
 
                 <th className="px-4 py-4">
-                  Retailer
+                  রিটেইলার
                 </th>
 
                 <th className="px-4 py-4">
-                  Status
+                  অবস্থা
                 </th>
 
                 <th className="rounded-r-lg px-4 py-4">
-                  Action
+                  কার্যক্রম
                 </th>
 
               </tr>
@@ -229,7 +229,7 @@ export default function AdminShops() {
                       ) : (
 
                         <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
-                          Not Assigned
+                          নির্ধারিত নয়
                         </span>
 
                       )}
@@ -246,8 +246,9 @@ export default function AdminShops() {
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {shop.status === 'Active' ? '● ' : '● '}
-                        {shop.status}
+                        {shop.status === 'Active'
+                          ? '● সক্রিয়'
+                          : '● নিষ্ক্রিয়'}
                       </span>
 
                     </td>
@@ -268,7 +269,9 @@ export default function AdminShops() {
                             : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
                         }`}
                       >
-                        {retailer ? 'Change Retailer' : 'Assign Retailer'}
+                        {retailer
+                          ? 'রিটেইলার পরিবর্তন করুন'
+                          : 'রিটেইলার নির্ধারণ করুন'}
                       </button>
 
                     </td>
@@ -294,11 +297,11 @@ export default function AdminShops() {
             </div>
 
             <p className="mt-3 font-medium text-slate-600">
-              No shops found
+              কোনো দোকান পাওয়া যায়নি
             </p>
 
             <p className="mt-1 text-sm text-slate-400">
-              Try a different search term.
+              অন্য কোনো শব্দ দিয়ে খুঁজে দেখুন।
             </p>
 
           </div>
@@ -327,8 +330,8 @@ export default function AdminShops() {
 
                   <h2 className="text-xl font-bold">
                     {assignments[selectedShop.id]
-                      ? 'Change Retailer'
-                      : 'Assign Retailer'}
+                      ? 'রিটেইলার পরিবর্তন করুন'
+                      : 'রিটেইলার নির্ধারণ করুন'}
                   </h2>
 
                   <p className="mt-1 text-sm text-blue-100">
@@ -345,7 +348,7 @@ export default function AdminShops() {
             <div className="p-6">
 
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Select Retailer
+                রিটেইলার নির্বাচন করুন
               </label>
 
               <select
@@ -355,7 +358,7 @@ export default function AdminShops() {
               >
 
                 <option value="">
-                  Choose a retailer
+                  একজন রিটেইলার নির্বাচন করুন
                 </option>
 
                 {retailers.map((retailer) => (
@@ -377,7 +380,7 @@ export default function AdminShops() {
                 <div className="mt-4 rounded-xl bg-blue-50 p-4">
 
                   <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
-                    Selected Retailer
+                    নির্বাচিত রিটেইলার
                   </p>
 
                   <p className="mt-1 font-semibold text-blue-800">
@@ -403,7 +406,7 @@ export default function AdminShops() {
                   }}
                   className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                 >
-                  Cancel
+                  বাতিল করুন
                 </button>
 
                 <button
@@ -412,8 +415,8 @@ export default function AdminShops() {
                   className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {assignments[selectedShop.id]
-                    ? 'Update Retailer'
-                    : 'Assign Retailer'}
+                    ? 'রিটেইলার আপডেট করুন'
+                    : 'রিটেইলার নির্ধারণ করুন'}
                 </button>
 
               </div>

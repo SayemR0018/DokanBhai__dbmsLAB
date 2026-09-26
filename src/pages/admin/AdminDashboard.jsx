@@ -3,36 +3,36 @@ import { Link } from 'react-router-dom'
 
 const stats = [
   {
-    title: 'Total Shops',
+    title: 'মোট দোকান',
     value: '12',
-    description: 'Registered businesses',
+    description: 'নিবন্ধিত ব্যবসা',
     icon: '🏪',
     color: 'from-blue-500 to-indigo-500',
     bg: 'bg-blue-50',
     text: 'text-blue-600',
   },
   {
-    title: 'Total Products',
+    title: 'মোট পণ্য',
     value: '248',
-    description: 'Products in system',
+    description: 'সিস্টেমে থাকা পণ্য',
     icon: '📦',
     color: 'from-purple-500 to-pink-500',
     bg: 'bg-purple-50',
     text: 'text-purple-600',
   },
   {
-    title: 'Total Customers',
+    title: 'মোট কাস্টমার',
     value: '186',
-    description: 'Registered customers',
+    description: 'নিবন্ধিত কাস্টমার',
     icon: '👥',
     color: 'from-emerald-500 to-teal-500',
     bg: 'bg-emerald-50',
     text: 'text-emerald-600',
   },
   {
-    title: 'Total Sales',
+    title: 'মোট বিক্রয়',
     value: '৳45,850',
-    description: 'Overall sales',
+    description: 'সর্বমোট বিক্রয়',
     icon: '💰',
     color: 'from-orange-500 to-amber-500',
     bg: 'bg-orange-50',
@@ -42,22 +42,22 @@ const stats = [
 
 const quickLinks = [
   {
-    title: 'Shop Management',
-    description: 'View and manage registered shops.',
+    title: 'দোকান ব্যবস্থাপনা',
+    description: 'নিবন্ধিত দোকানগুলো দেখুন এবং পরিচালনা করুন।',
     icon: '🏪',
     path: '/admin/shops',
     color: 'from-blue-500 to-indigo-500',
   },
   {
-    title: 'Product Management',
-    description: 'Monitor products and inventory.',
+    title: 'পণ্য ব্যবস্থাপনা',
+    description: 'পণ্য এবং স্টকের তথ্য পর্যবেক্ষণ করুন।',
     icon: '📦',
     path: '/admin/products',
     color: 'from-purple-500 to-pink-500',
   },
   {
-    title: 'Reports & Analytics',
-    description: 'View sales and business reports.',
+    title: 'রিপোর্ট ও বিশ্লেষণ',
+    description: 'বিক্রয় এবং ব্যবসার রিপোর্ট দেখুন।',
     icon: '📊',
     path: '/admin/reports',
     color: 'from-emerald-500 to-teal-500',
@@ -75,15 +75,15 @@ export default function AdminDashboard() {
 
           <div>
             <p className="mb-2 text-sm font-medium text-blue-100">
-              DokanBhai Administration
+              দোকানভাই অ্যাডমিন প্যানেল
             </p>
 
             <h1 className="text-3xl font-bold md:text-4xl">
-              Admin Dashboard
+              অ্যাডমিন ড্যাশবোর্ড
             </h1>
 
             <p className="mt-2 text-blue-100">
-              Monitor and manage the DokanBhai platform.
+              দোকানভাই প্ল্যাটফর্ম পর্যবেক্ষণ ও পরিচালনা করুন।
             </p>
           </div>
 
@@ -155,11 +155,11 @@ export default function AdminDashboard() {
 
             <div>
               <h2 className="text-xl font-bold text-slate-800">
-                Platform Overview
+                প্ল্যাটফর্মের সারসংক্ষেপ
               </h2>
 
               <p className="text-sm text-slate-400">
-                Current system status
+                বর্তমান সিস্টেমের অবস্থা
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <span className="font-medium text-slate-700">
-                  Active Shops
+                  সক্রিয় দোকান
                 </span>
 
               </div>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <span className="font-medium text-slate-700">
-                  Low Stock Products
+                  কম স্টকের পণ্য
                 </span>
 
               </div>
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <span className="font-medium text-slate-700">
-                  Pending Activities
+                  অপেক্ষমাণ কার্যক্রম
                 </span>
 
               </div>
@@ -245,11 +245,11 @@ export default function AdminDashboard() {
 
             <div>
               <h2 className="text-xl font-bold text-slate-800">
-                Recent Activity
+                সাম্প্রতিক কার্যক্রম
               </h2>
 
               <p className="text-sm text-slate-400">
-                Latest platform activities
+                প্ল্যাটফর্মের সর্বশেষ কার্যক্রম
               </p>
             </div>
 
@@ -265,11 +265,11 @@ export default function AdminDashboard() {
 
               <div>
                 <p className="font-semibold text-slate-700">
-                  New shop registered
+                  নতুন দোকান নিবন্ধিত হয়েছে
                 </p>
 
                 <p className="text-xs text-slate-400">
-                  Recently
+                  সম্প্রতি
                 </p>
               </div>
 
@@ -283,11 +283,11 @@ export default function AdminDashboard() {
 
               <div>
                 <p className="font-semibold text-slate-700">
-                  Product inventory updated
+                  পণ্যের স্টক আপডেট হয়েছে
                 </p>
 
                 <p className="text-xs text-slate-400">
-                  Recently
+                  সম্প্রতি
                 </p>
               </div>
 
@@ -301,11 +301,11 @@ export default function AdminDashboard() {
 
               <div>
                 <p className="font-semibold text-slate-700">
-                  New customer added
+                  নতুন কাস্টমার যোগ হয়েছে
                 </p>
 
                 <p className="text-xs text-slate-400">
-                  Recently
+                  সম্প্রতি
                 </p>
               </div>
 
@@ -323,11 +323,11 @@ export default function AdminDashboard() {
         <div className="mb-5">
 
           <h2 className="text-2xl font-bold text-slate-800">
-            Quick Access
+            দ্রুত প্রবেশ
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Quickly access admin management modules.
+            অ্যাডমিন ব্যবস্থাপনার অপশনগুলোতে দ্রুত প্রবেশ করুন।
           </p>
 
         </div>
