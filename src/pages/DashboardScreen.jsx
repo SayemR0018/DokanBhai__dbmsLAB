@@ -113,7 +113,7 @@ export default function DashboardScreen() {
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl p-5 shadow-lg shadow-emerald-200">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs uppercase tracking-wide text-white/80">নগদ (Nogod)</p>
+              <p className="text-xs uppercase tracking-wide text-white/80">নগদ / Cash</p>
               <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalCash)}</p>
               <p className="text-xs text-white/80 mt-1">নগদ গৃহীত / Cash received</p>
             </div>

@@ -75,3 +75,19 @@ export const SUPABASE_DOMAIN = SUPABASE_URL || ''
 export function getSupabase() {
   return supabase
 }
+
+// Shop phone sent on every PostgREST request so RLS can scope rows.
+// The anon key has no user id; this header is the shop identity the policies read.
+export function setShopPhone(phone) {
+  if (!supabase?.rest) return
+  const value = (phone || '').replace(/\D/g, '')
+  const headers = supabase.rest.headers
+  if (!headers) return
+  if (typeof headers.set === 'function') {
+    if (value) headers.set('x-shop-phone', value)
+    else headers.delete('x-shop-phone')
+    return
+  }
+  if (value) headers['x-shop-phone'] = value
+  else delete headers['x-shop-phone']
+}

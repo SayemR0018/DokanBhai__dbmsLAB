@@ -209,7 +209,7 @@ export default function NewSaleScreen() {
   const walkIn = !customer
 
   return (
-    <div className="space-y-6 pb-36 lg:pb-0">
+    <div className="space-y-6 pb-36 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-steel-400">POS / নতুন বিক্রয়</p>
@@ -226,7 +226,7 @@ export default function NewSaleScreen() {
 
       {/* Mobile-only inline product catalog with real-time search.
           Hidden on lg+, where the desktop layout below takes over. */}
-      <div className="lg:hidden">
+      <div className="md:hidden">
         <Card className="p-4">
           <div className="flex items-center justify-between mb-3 gap-2">
             <h3 className="font-bold text-steel-800 flex-1">পণ্য / Products</h3>
@@ -283,9 +283,9 @@ export default function NewSaleScreen() {
         </Card>
       </div>
 
-      <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-4 lg:space-y-0">
-        <div className="lg:col-span-2 space-y-4">
-          <Card className="p-4 hidden lg:block">
+      <div className="md:grid md:grid-cols-3 md:gap-6 space-y-4 md:space-y-0">
+        <div className="md:col-span-2 space-y-4">
+          <Card className="p-4 hidden md:block">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-steel-800">পণ্য / Products</h3>
               <Button size="sm" onClick={() => setShowPicker('product')}><PlusIcon size={16} /> যোগ করুন / Add items</Button>
@@ -447,7 +447,7 @@ export default function NewSaleScreen() {
       {/* Mobile-only sticky bottom cart bar.
           Hidden when the cart sheet is open so the bar doesn't double up. */}
       <div
-        className={`lg:hidden fixed bottom-[56px] left-0 right-0 z-30 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)] ${cartSheetOpen ? 'hidden' : ''}`}
+        className={`md:hidden fixed bottom-[56px] left-0 right-0 z-30 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)] ${cartSheetOpen ? 'hidden' : ''}`}
       >
         <button
           type="button"
@@ -847,7 +847,7 @@ function Receipt({ invoice, customer, store }) {
         <div className="flex justify-between"><span>Invoice</span><span className="font-mono">{invoice.invoice_no}</span></div>
         <div className="flex justify-between"><span>Date</span><span>{formatDateTime(invoice.date)}</span></div>
         <div className="flex justify-between"><span>Customer</span><span>{customer?.name || 'Walk-in'}</span></div>
-        <div className="flex justify-between"><span>Pay Type</span><span className="uppercase">{invoice.pay_type === 'cash' ? 'Nogod' : invoice.pay_type === 'credit' ? 'Baki' : invoice.pay_type}</span></div>
+        <div className="flex justify-between"><span>পেমেন্ট / Pay type</span><span>{invoice.pay_type === 'cash' ? 'নগদ / Cash' : invoice.pay_type === 'credit' ? 'বাকি / Baki' : invoice.pay_type === 'online' ? 'অনলাইন / Online' : invoice.pay_type}</span></div>
       </div>
       <hr className="border-dashed border-steel-300 my-3" />
       <table className="w-full text-xs">

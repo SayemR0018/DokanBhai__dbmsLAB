@@ -11,7 +11,7 @@
 // When Supabase is configured, mutation and read errors are thrown. They are
 // not copied into localStorage. localDb is used only when Supabase is not configured.
 
-import { getSupabase, isSupabaseConfigured } from './supabaseClient'
+import { getSupabase, isSupabaseConfigured, setShopPhone } from './supabaseClient'
 import localDb from './localDb'
 import { getProfile as getProfileRaw, setProfile as setProfileRaw, updateProfile as updateProfileRaw, clearProfile as clearProfileRaw } from './dokanProfile'
 
@@ -19,6 +19,7 @@ import { getProfile as getProfileRaw, setProfile as setProfileRaw, updateProfile
 let currentPhone = ''
 export function setCurrentPhone(p) {
   currentPhone = (p || '').replace(/\D/g, '')
+  setShopPhone(currentPhone)
 }
 export function getCurrentPhone() {
   return currentPhone
@@ -38,12 +39,16 @@ const TABLES = {
 // Shop-phone column. Contact phones on customers/vendors are not tenant keys.
 const SHOP_PHONE_TABLES = new Set(['businesses'])
 // Invoices carry the shop id. Onboarding uses the shop phone as businesses.id.
-const BUSINESS_SCOPED_TABLES = new Set(['invoices'])
+const BUSINESS_SCOPED_TABLES = new Set(['invoices', 'products', 'customers', 'vendors', 'transactions', 'payments'])
+const OWN_ROWS_ONLY = new Set(['invoices', 'transactions', 'payments'])
 
 function scopeQuery(query, table) {
   if (!currentPhone) return query
   if (SHOP_PHONE_TABLES.has(table)) return query.eq('phone', currentPhone)
-  if (BUSINESS_SCOPED_TABLES.has(table)) return query.eq('business_id', currentPhone)
+  if (OWN_ROWS_ONLY.has(table)) return query.eq('business_id', currentPhone)
+  if (BUSINESS_SCOPED_TABLES.has(table)) {
+    return query.or(`business_id.eq.${currentPhone},business_id.is.null`)
+  }
   return query
 }
 
@@ -55,7 +60,7 @@ function stampForTable(table, record) {
     if (currentPhone && !row.phone) row.phone = currentPhone
     return row
   }
-  if (table === 'invoices') {
+  if (BUSINESS_SCOPED_TABLES.has(table)) {
     if (currentPhone && !row.business_id) row.business_id = currentPhone
   }
   if (table !== 'customers' && table !== 'vendors') {
@@ -189,9 +194,11 @@ export const data = {
   },
 
   async recordPayment(payload) {
-    if (!isSupabaseConfigured) return localDb.recordPayment(payload)
+    const payment = { ...payload }
+    if (currentPhone && !payment.business_id) payment.business_id = currentPhone
+    if (!isSupabaseConfigured) return localDb.recordPayment(payment)
     const supabase = getSupabase()
-    const { data, error } = await supabase.rpc('record_payment', { payload })
+    const { data, error } = await supabase.rpc('record_payment', { payload: payment })
     if (error) throw error
     return data
   },

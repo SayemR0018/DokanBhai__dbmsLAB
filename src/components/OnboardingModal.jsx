@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Modal, Button, Input, Field } from './ui'
 import BusinessTypeChips from './BusinessTypeChips'
-import { getSupabase, isSupabaseConfigured } from '../lib/supabaseClient'
+import { getSupabase, isSupabaseConfigured, setShopPhone } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
 // Normalize a Bangladesh mobile number to the 01XXXXXXXXX 11-digit form.
@@ -17,6 +17,7 @@ async function persistToSupabase({ cleanPhone, storeName, ownerName, region, bus
   if (!isSupabaseConfigured) return { ok: true, skipped: true }
   const supabase = getSupabase()
   if (!supabase) return { ok: true, skipped: true }
+  setShopPhone(cleanPhone)
 
   const errors = []
   try {

@@ -100,7 +100,7 @@ export default function PhoneGateScreen() {
           </form>
                     <div className="mt-6 border-t border-steel-200 pt-5 text-center">
             <p className="text-sm text-steel-500 mb-3">
-              Administrator access
+              অ্যাডমিন প্রবেশ / Administrator access
             </p>
 
             <Link

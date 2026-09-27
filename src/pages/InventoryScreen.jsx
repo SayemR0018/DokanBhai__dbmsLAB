@@ -4,6 +4,7 @@ import { Card, Button, Modal, Input, Field, Select, Textarea, Badge, EmptyState,
 import UnitSelect from '../components/UnitSelect'
 import { PlusIcon, EditIcon, TrashIcon, SearchIcon, AlertIcon, PackageIcon } from '../components/icons'
 import { formatBDT } from '../lib/format'
+import { decimalsFor, stepFor } from '../lib/units'
 
 const blank = () => ({
   name: '',
@@ -290,10 +291,10 @@ export default function InventoryScreen() {
               <Input type="number" min="0" step="0.01" inputMode="decimal" value={editing.sale_price} onChange={(e) => setEditing({ ...editing, sale_price: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="মজুদ / Stock on hand">
-              <Input type="number" min="0" step="any" inputMode="decimal" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className="min-h-[44px]" />
+              <Input type="number" min="0" step={decimalsFor(editing.unit) > 0 ? stepFor(editing.unit) : 1} inputMode={decimalsFor(editing.unit) > 0 ? 'decimal' : 'numeric'} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="সর্বনিম্ন স্টক / Minimum stock" hint="স্টক এই সংখ্যায় বা কমে গেলে সতর্কতা দেখাবে।">
-              <Input type="number" min="0" step="any" inputMode="decimal" value={editing.min_stock} onChange={(e) => setEditing({ ...editing, min_stock: e.target.value })} className="min-h-[44px]" />
+              <Input type="number" min="0" step={decimalsFor(editing.unit) > 0 ? stepFor(editing.unit) : 1} inputMode={decimalsFor(editing.unit) > 0 ? 'decimal' : 'numeric'} value={editing.min_stock} onChange={(e) => setEditing({ ...editing, min_stock: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="একক / Unit">
               <UnitSelect value={editing.unit} onChange={(v) => setEditing({ ...editing, unit: v })} />

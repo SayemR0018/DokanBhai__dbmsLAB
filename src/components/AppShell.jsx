@@ -79,7 +79,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className="h-screen flex bg-steel-50">
-      <aside className="hidden lg:flex w-64 bg-white border-r border-steel-100 flex-col">
+      <aside className="hidden md:flex w-64 bg-white border-r border-steel-100 flex-col">
         <div className="px-5 py-5 border-b border-steel-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-black">D</div>
@@ -121,7 +121,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {open && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-steel-900/50" onClick={() => setOpen(false)}></div>
           <aside className="relative w-64 bg-white flex flex-col">
             <div className="px-5 py-5 border-b border-steel-100 flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function AppShell({ children }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden bg-white border-b border-steel-100 px-4 py-3 flex items-center justify-between">
+        <header className="md:hidden bg-white border-b border-steel-100 px-4 py-3 flex items-center justify-between">
           <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-steel-100" title="মেনু / Menu">
             <MenuIcon size={20} />
           </button>
@@ -168,7 +168,7 @@ export default function AppShell({ children }) {
             <LogOutIcon size={16} />
           </button>
         </header>
-        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 lg:pb-0">
+        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             {children}
           </div>
@@ -178,7 +178,7 @@ export default function AppShell({ children }) {
             Hidden on lg+, where the sidebar already covers navigation. */}
         <nav
           aria-label="Primary"
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]"
         >
           <div className="grid grid-cols-5">
             {[
@@ -281,9 +281,6 @@ function SettingsModal({ open, onClose, profile, updateProfile, onReset, onSignO
   const [businessType, setBusinessType] = useState(profile?.store?.businessType || 'mudi')
   const [resetOpen, setResetOpen] = useState(false)
 
-  // Re-seed local state every time the modal opens so edits the user makes
-  // in <InventoryScreen /> etc. are reflected here.
-  useState(() => { /* placeholder for linter */ })
   const refreshLocal = () => {
     setStoreName(profile?.store?.name || '')
     setOwnerName(profile?.store?.ownerName || '')
