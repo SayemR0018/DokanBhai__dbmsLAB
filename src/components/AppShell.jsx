@@ -55,10 +55,10 @@ export default function AppShell({ children }) {
           to={to}
           onClick={() => closeAfter && setOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+            `flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-semibold transition ${
               isActive
-                ? 'bg-brand-500 text-white shadow-sm shadow-brand-200'
-                : 'text-steel-600 hover:bg-steel-100 hover:text-steel-800'
+                ? 'bg-[#006b4f] text-white'
+                : 'text-white/75 hover:bg-white/10 hover:text-white'
             }`
           }
         >
@@ -69,7 +69,7 @@ export default function AppShell({ children }) {
       <button
         type="button"
         onClick={() => { setSettingsOpen(true); closeAfter && setOpen(false) }}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-steel-600 hover:bg-steel-100 hover:text-steel-800"
+        className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white"
       >
         <TagIcon size={18} />
         <span>সেটিংস / Settings</span>
@@ -78,32 +78,32 @@ export default function AppShell({ children }) {
   )
 
   return (
-    <div className="h-screen flex bg-steel-50">
-      <aside className="hidden md:flex w-64 bg-white border-r border-steel-100 flex-col">
-        <div className="px-5 py-5 border-b border-steel-100">
+    <div className="shop-app h-screen flex bg-[#e7eeea]">
+      <aside className="hidden md:flex w-[240px] bg-[#062035] text-white flex-col">
+        <div className="px-5 py-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-black">D</div>
+            <div className="w-10 h-10 rounded-xl bg-[#006b4f] text-white flex items-center justify-center font-black">D</div>
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-steel-400">DokanBhai</p>
-              <p className="text-sm font-bold text-steel-800 truncate max-w-[150px]">{storeName}</p>
+              <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
+              <p className="text-sm font-bold truncate max-w-[150px]">{storeName}</p>
             </div>
           </div>
           {biz && (
-            <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-brand-50 text-brand-700 text-[10px] font-semibold">
+            <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/10 text-[#d7f5ea] text-[10px] font-semibold">
               <span>{biz.icon}</span>
               <span className="truncate">{biz.label}</span>
             </div>
           )}
         </div>
         {nav()}
-        <div className="p-3 border-t border-steel-100 space-y-2">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-steel-50">
-            <div className="w-9 h-9 rounded-full bg-brand-500 text-white flex items-center justify-center text-sm font-bold">
+        <div className="p-3 border-t border-white/10 space-y-2">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/10">
+            <div className="w-9 h-9 rounded-full bg-[#006b4f] text-white flex items-center justify-center text-sm font-bold">
               {initials(user?.name || user?.phone || 'U')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-steel-800 truncate">{user?.name || user?.phone}</p>
-              <p className="text-xs text-steel-500 truncate">{user?.role || 'Dokan Malik'}</p>
+              <p className="text-sm font-semibold truncate">{user?.name || user?.phone}</p>
+              <p className="text-xs text-white/60 truncate">{user?.phone || 'দোকানদার'}</p>
             </div>
           </div>
           <Button
@@ -114,8 +114,8 @@ export default function AppShell({ children }) {
           >
             <LogOutIcon size={16} /> লগআউট / Sign out
           </Button>
-          <div className="px-3 text-[10px] uppercase tracking-wider text-steel-400">
-            Backend: <span className={backendsMode === 'supabase' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{backendsMode}</span>
+          <div className="px-3 text-[10px] font-semibold text-white/40">
+            {backendsMode === 'supabase' ? 'ক্লাউড সংযুক্ত' : 'এই ফোনে সংরক্ষিত'}
           </div>
         </div>
       </aside>
@@ -123,19 +123,19 @@ export default function AppShell({ children }) {
       {open && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-steel-900/50" onClick={() => setOpen(false)}></div>
-          <aside className="relative w-64 bg-white flex flex-col">
-            <div className="px-5 py-5 border-b border-steel-100 flex items-center justify-between">
+          <aside className="relative w-[min(100%,280px)] bg-[#062035] text-white flex flex-col">
+            <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-black">D</div>
+                <div className="w-10 h-10 rounded-xl bg-[#006b4f] text-white flex items-center justify-center font-black">D</div>
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-widest text-steel-400">DokanBhai</p>
-                  <p className="text-sm font-bold text-steel-800 truncate">{storeName}</p>
+                  <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
+                  <p className="text-sm font-bold truncate">{storeName}</p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-steel-100"><XIcon size={18} /></button>
+              <button onClick={() => setOpen(false)} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10"><XIcon size={18} /></button>
             </div>
             {nav(true)}
-            <div className="p-3 border-t border-steel-100">
+            <div className="p-3 border-t border-white/10">
               <Button
                 variant="secondary"
                 onClick={handleSignOut}
@@ -149,27 +149,24 @@ export default function AppShell({ children }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden bg-white border-b border-steel-100 px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-steel-100" title="মেনু / Menu">
+        <header className="md:hidden bg-[#062035] text-white px-3 py-2 flex items-center justify-between gap-2">
+          <button onClick={() => setOpen(true)} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10" title="মেনু / Menu">
             <MenuIcon size={20} />
           </button>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center text-xs font-black">D</div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold truncate">{storeName}</p>
-              {biz && <p className="text-[10px] text-steel-500 truncate">{biz.icon} {biz.label}</p>}
-            </div>
+          <div className="min-w-0 text-center">
+            <p className="text-sm font-bold truncate">{storeName}</p>
+            {biz && <p className="text-[11px] text-[#8bc6b4] truncate">{biz.label}</p>}
           </div>
           <button
             onClick={handleSignOut}
-            className="p-2 rounded-lg text-steel-500 hover:bg-red-50 hover:text-red-600"
+            className="min-h-[44px] min-w-[44px] rounded-xl text-white/80 hover:bg-white/10"
             title="লগআউট / Sign out"
           >
-            <LogOutIcon size={16} />
+            <LogOutIcon size={18} />
           </button>
         </header>
-        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
-          <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <main className="shop-page flex-1 overflow-y-auto scrollbar-thin pb-24 md:pb-0">
+          <div className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-6">
             {children}
           </div>
         </main>
@@ -178,7 +175,7 @@ export default function AppShell({ children }) {
             Hidden on lg+, where the sidebar already covers navigation. */}
         <nav
           aria-label="Primary"
-          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-steel-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#062035] pb-[env(safe-area-inset-bottom)]"
         >
           <div className="grid grid-cols-5">
             {[
@@ -193,7 +190,7 @@ export default function AppShell({ children }) {
                   key="menu"
                   type="button"
                   onClick={() => setOpen(true)}
-                  className="flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-medium text-steel-500 hover:text-steel-800 active:bg-steel-50 transition"
+                  className="flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-semibold text-white/55"
                   title="মেনু / Menu"
                 >
                   <MenuIcon size={20} />
@@ -204,8 +201,8 @@ export default function AppShell({ children }) {
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
-                    `flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-medium transition active:bg-steel-50 ${
-                      isActive ? 'text-brand-600' : 'text-steel-500 hover:text-steel-800'
+                    `flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-semibold ${
+                      isActive ? 'text-[#9dface]' : 'text-white/55'
                     }`
                   }
                   title={`${item.label} / ${item.sub}`}

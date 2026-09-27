@@ -4,7 +4,7 @@ import data from '../lib/data'
 import { formatBDT, formatDate, daysAgo, initials, avatarColor } from '../lib/format'
 import { Card, Badge, EmptyState, Spinner } from '../components/ui'
 import {
-  MoneyIcon, CartIcon, AlertIcon, UsersIcon, TrendingUpIcon, PackageIcon, ChevronRightIcon,
+  CartIcon, PackageIcon, ChevronRightIcon,
 } from '../components/icons'
 
 function useDashboardData() {
@@ -92,60 +92,35 @@ export default function DashboardScreen() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest text-steel-400">ড্যাশবোর্ড / Dashboard</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-steel-800">{bizName}</h1>
-          <p className="text-sm text-steel-500 mt-1">আসসালামু আলাইকুম! আজকের দোকানের হিসাব দেখুন।</p>
+          <h1>আজকের খাতা</h1>
+          <p className="text-sm text-[#526176] mt-1">{bizName}</p>
         </div>
-        <Link to="/pos" className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm shadow-brand-200 min-h-[44px]">
-          <CartIcon size={18} /> নতুন বিক্রয় / New Sale
+        <Link to="/pos" className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#006b4f] px-4 text-sm font-semibold text-white">
+          <CartIcon size={18} /> বিক্রি
         </Link>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-brand-500 to-brand-700 text-white rounded-2xl p-5 shadow-lg shadow-brand-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-white/80">মোট বিক্রয় (Total Sales)</p>
-              <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalSales)}</p>
-              <p className="text-xs text-white/80 mt-1">গত ৩০ দিন · {stats.monthCount} বিক্রয় / Last 30 days · {stats.monthCount} sales</p>
-            </div>
-            <TrendingUpIcon size={28} className="text-white/80" />
-          </div>
+      <section className="rounded-3xl bg-[#062035] text-white p-5">
+        <p className="text-sm text-[#8bc6b4]">গত ৩০ দিনের বিক্রি</p>
+        <p className="mt-1 text-4xl font-bold tracking-tight">{formatBDT(stats.totalSales)}</p>
+        <p className="mt-1 text-sm text-white/70">{stats.monthCount} বিক্রি · আজ {stats.todayCount}</p>
+        <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-sm">
+          <Link to="/sales" className="min-h-[44px]">
+            <span className="block text-[#8bc6b4]">নগদ</span>
+            <span className="font-bold">{formatBDT(stats.totalCash)}</span>
+          </Link>
+          <Link to="/hisab" className="min-h-[44px]">
+            <span className="block text-[#ffd29a]">বাকি</span>
+            <span className="font-bold">{formatBDT(stats.totalDue)}</span>
+          </Link>
+          <Link to="/inventory" className="min-h-[44px]">
+            <span className="block text-white/60">কম স্টক</span>
+            <span className="font-bold">{stats.lowStock.length}</span>
+          </Link>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl p-5 shadow-lg shadow-emerald-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-white/80">নগদ / Cash</p>
-              <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalCash)}</p>
-              <p className="text-xs text-white/80 mt-1">নগদ গৃহীত / Cash received</p>
-            </div>
-            <MoneyIcon size={28} className="text-white/80" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-red-500 to-red-700 text-white rounded-2xl p-5 shadow-lg shadow-red-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-white/80">মোট বাকি (Baki)</p>
-              <p className="text-2xl font-bold mt-2">{formatBDT(stats.totalDue)}</p>
-              <p className="text-xs text-white/80 mt-1">{customers.filter((c) => c.balance > 0).length} জন কাস্টমারের মধ্যে / Across {customers.filter((c) => c.balance > 0).length} customers</p>
-            </div>
-            <AlertIcon size={28} className="text-white/80" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-5 shadow-lg shadow-purple-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-white/80">স্টক কম (Low Stock)</p>
-              <p className="text-2xl font-bold mt-2">{stats.lowStock.length}</p>
-              <p className="text-xs text-white/80 mt-1">সর্বনিম্ন থেকে কম / Items below threshold</p>
-            </div>
-            <PackageIcon size={28} className="text-white/80" />
-          </div>
-        </div>
-      </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Sales trend chart */}

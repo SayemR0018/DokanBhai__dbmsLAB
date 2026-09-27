@@ -3,7 +3,7 @@ import { XIcon } from './icons'
 
 export function Card({ children, className = '', onClick }) {
   return (
-    <div onClick={onClick} className={`bg-white rounded-2xl border border-steel-100 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition' : ''} ${className}`}>
+    <div onClick={onClick} className={`bg-white rounded-2xl border border-[#d5e2db] ${onClick ? 'cursor-pointer active:bg-[#f4faf7]' : ''} ${className}`}>
       {children}
     </div>
   )
@@ -16,8 +16,8 @@ export function Button({ children, variant = 'primary', size = 'md', className =
     lg: 'px-5 py-3 text-base min-h-[48px]',
   }
   const variants = {
-    primary: 'bg-brand-500 hover:bg-brand-600 text-white shadow-sm shadow-brand-200',
-    secondary: 'bg-white border border-steel-200 hover:bg-steel-50 text-steel-700',
+    primary: 'bg-[#006b4f] hover:bg-[#05543e] text-white',
+    secondary: 'bg-white border border-[#d5e2db] hover:bg-[#f4faf7] text-[#062035]',
     ghost: 'text-steel-600 hover:bg-steel-100',
     danger: 'bg-red-500 hover:bg-red-600 text-white shadow-sm shadow-red-200',
     success: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-200',
@@ -26,7 +26,7 @@ export function Button({ children, variant = 'primary', size = 'md', className =
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${sizes[size]} ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 font-semibold rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed ${sizes[size]} ${variants[variant]} ${className}`}
     >
       {children}
     </button>
@@ -38,7 +38,7 @@ export function Input(props) {
   return (
     <input
       {...rest}
-      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition min-h-[44px] ${className}`}
+      className={`w-full px-3 py-2 bg-[#fbfefc] border border-[#d5e2db] rounded-xl text-base text-[#062035] placeholder-steel-400 focus:border-[#006b4f] focus:ring-2 focus:ring-[#d7f5ea] transition min-h-[48px] ${className}`}
     />
   )
 }
@@ -48,7 +48,7 @@ export function Textarea(props) {
   return (
     <textarea
       {...rest}
-      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 placeholder-steel-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition min-h-[44px] ${className}`}
+      className={`w-full px-3 py-2 bg-[#fbfefc] border border-[#d5e2db] rounded-xl text-base text-[#062035] placeholder-steel-400 focus:border-[#006b4f] focus:ring-2 focus:ring-[#d7f5ea] transition min-h-[48px] ${className}`}
     />
   )
 }
@@ -57,7 +57,7 @@ export function Select({ children, className = '', ...props }) {
   return (
     <select
       {...props}
-      className={`w-full px-3 py-2 bg-white border border-steel-200 rounded-lg text-sm text-steel-800 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition min-h-[44px] ${className}`}
+      className={`w-full px-3 py-2 bg-[#fbfefc] border border-[#d5e2db] rounded-xl text-base text-[#062035] focus:border-[#006b4f] focus:ring-2 focus:ring-[#d7f5ea] transition min-h-[48px] ${className}`}
     >
       {children}
     </select>
@@ -140,7 +140,7 @@ export function Modal({ open, onClose, title, children, size = 'md', footer }) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-steel-100">
           <h2 className="text-lg font-bold text-steel-800">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-steel-100 text-steel-500"><XIcon size={20} /></button>
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-[#f4faf7] text-steel-500"><XIcon size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">{children}</div>
         {footer && <div className="px-5 py-3 border-t border-steel-100 bg-steel-50 rounded-b-2xl">{footer}</div>}
@@ -167,7 +167,7 @@ export function Drawer({ open, onClose, title, children, width = 'max-w-md' }) {
       <div className={`w-full ${width} bg-white shadow-xl flex flex-col h-full`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-steel-100">
           <h2 className="text-lg font-bold text-steel-800">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-steel-100 text-steel-500"><XIcon size={20} /></button>
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-[#f4faf7] text-steel-500"><XIcon size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
@@ -180,7 +180,7 @@ export function Chip({ active, onClick, children, className = '' }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition whitespace-nowrap ${
+      className={`inline-flex items-center gap-1.5 px-3 min-h-[44px] rounded-full text-xs font-semibold border transition whitespace-nowrap ${
         active
           ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-200'
           : 'bg-white text-steel-600 border-steel-200 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200'

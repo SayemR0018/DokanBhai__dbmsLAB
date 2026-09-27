@@ -93,7 +93,7 @@ export default function SalesScreen() {
             <button
               key={opt.k}
               onClick={() => setFilterDate(opt.k)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+              className={`px-3 min-h-[44px] rounded-full text-xs font-semibold border transition ${
                 filterDate === opt.k ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-steel-600 border-steel-200 hover:bg-steel-50'
               }`}
             >{opt.label}</button>
