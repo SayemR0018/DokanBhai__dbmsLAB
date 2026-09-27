@@ -4,9 +4,8 @@
 //
 // TENANT SCOPING — the storage key is suffixed with the authenticated phone
 // (`dokanbhai-local-db_${phone}`) so different logins on the same device
-// never share inventory, sales, or customer data. On first read for a given
-// phone, the legacy `dokanbhai-local-db-v1` blob is copied into the new key
-// (idempotent — tracked by a sibling migration flag).
+// never share inventory, sales, or customer data. Legacy unscoped blobs are
+// not copied into a new phone.
 //
 // Rows also carry a `phone` field stamped on every write so list/get can
 // filter cross-tenant rows client-side even if multiple tenants were ever
@@ -14,9 +13,6 @@
 
 import { getProfile } from './dokanProfile'
 import { seedFor } from './verticals'
-
-const LEGACY_KEY = 'dokanbhai-local-db-v1'
-const MIGRATED_PREFIX = 'dokanbhai-local-db-migrated-'
 
 let currentPhone = ''
 export function setCurrentPhone(p) {
@@ -28,7 +24,6 @@ export function getCurrentPhone() {
 
 const safePhone = () => currentPhone || 'anon'
 const STORAGE_KEY = () => `dokanbhai-local-db_${safePhone()}`
-const MIGRATED_KEY = () => `${MIGRATED_PREFIX}${safePhone()}`
 
 const seed = () => {
   const profile = getProfile()
@@ -114,25 +109,8 @@ const legacyMudiSeed = () => ({
 
 const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 
-// One-time migration: copy legacy blob into the per-tenant key. Idempotent.
-const migrateLegacyIfNeeded = () => {
-  if (typeof window === 'undefined') return null
-  if (!currentPhone) return null
-  if (localStorage.getItem(MIGRATED_KEY()) === '1') return null
-  const raw = localStorage.getItem(LEGACY_KEY)
-  if (raw) {
-    if (!localStorage.getItem(STORAGE_KEY())) {
-      localStorage.setItem(STORAGE_KEY(), raw)
-    }
-  }
-  localStorage.setItem(MIGRATED_KEY(), '1')
-  return raw
-}
-
 function load() {
   if (typeof window === 'undefined') return seed()
-  // Trigger one-time migration before reading so the new key is populated.
-  migrateLegacyIfNeeded()
   try {
     const raw = localStorage.getItem(STORAGE_KEY())
     if (!raw) {
@@ -273,7 +251,13 @@ export const localDb = {
     const saleDate = date || new Date().toISOString()
     const tenantStamp = currentPhone ? { phone: currentPhone } : {}
 
-    lineItems.forEach((it) => {
+    let remainingPaid = paid
+    lineItems.forEach((it, idx) => {
+      const isLast = idx === lineItems.length - 1
+      const share = isLast || subtotal === 0
+        ? (isLast ? remainingPaid : 0)
+        : Math.round((paid * it.amount / subtotal) * 100) / 100
+      if (!isLast) remainingPaid = Math.round((remainingPaid - share) * 100) / 100
       const meta = [
         it.serialNumber ? `SN:${it.serialNumber}` : '',
         it.warrantyNote ? `Warranty:${it.warrantyNote}` : '',
@@ -288,7 +272,7 @@ export const localDb = {
         unit_price: it.unit_price,
         amount: it.amount,
         discount: 0,
-        paid_amount: 0,
+        paid_amount: share,
         pay_type,
         note: meta ? (note ? `${note} · ${meta}` : meta) : note,
         date: saleDate,

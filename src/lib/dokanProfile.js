@@ -5,15 +5,25 @@
 //
 // TENANT SCOPING — the storage key is suffixed with the authenticated phone
 // (`dokan_profile_${phone}`) so different logins on the same device never
-// overwrite each other. On first read for a given phone, the legacy
-// `dokan_profile` blob is copied into the new key (idempotent — tracked by
-// a sibling `dokan_profile_migrated_${phone}` flag).
+// overwrite each other. The phone is restored from the shop session before
+// the first read. Legacy unscoped blobs are not copied into a new phone.
 
 import { getBusinessType } from './verticals'
 
-const LEGACY_KEY = 'dokan_profile'
-const MIGRATED_PREFIX = 'dokan_profile_migrated_'
 let currentPhone = ''
+
+function bootPhoneFromSession() {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = localStorage.getItem('dokanbhai-auth-session')
+    const parsed = raw ? JSON.parse(raw) : null
+    const phone = (parsed?.phone || '').replace(/\D/g, '')
+    if (phone) currentPhone = phone
+  } catch {
+    /* session blob is unreadable; leave the phone unset */
+  }
+}
+bootPhoneFromSession()
 
 export function setCurrentPhone(p) {
   const next = (p || '').replace(/\D/g, '')
@@ -30,7 +40,6 @@ export function setCurrentPhone(p) {
 const safePhone = () => currentPhone || 'anon'
 
 const STORAGE_KEY = () => `dokan_profile_${safePhone()}`
-const MIGRATED_KEY = () => `${MIGRATED_PREFIX}${safePhone()}`
 
 const readRaw = (key) => {
   if (typeof window === 'undefined') return null
@@ -48,31 +57,10 @@ const writeRaw = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
-const migrateLegacyIfNeeded = () => {
-  if (typeof window === 'undefined') return null
-  if (!currentPhone) return null
-  if (localStorage.getItem(MIGRATED_KEY()) === '1') return null
-  const legacy = readRaw(LEGACY_KEY)
-  if (!legacy) {
-    // Nothing to migrate — but mark so we don't keep checking.
-    localStorage.setItem(MIGRATED_KEY(), '1')
-    return null
-  }
-  // Only copy if the new key is currently empty for this phone.
-  if (!localStorage.getItem(STORAGE_KEY())) {
-    localStorage.setItem(STORAGE_KEY(), JSON.stringify(legacy))
-  }
-  localStorage.setItem(MIGRATED_KEY(), '1')
-  return readRaw(STORAGE_KEY())
-}
-
 export function getProfile() {
   if (typeof window === 'undefined') return null
   const scoped = readRaw(STORAGE_KEY())
   if (scoped && scoped.store) return scoped
-  // First read for this phone — pull legacy value across.
-  const migrated = migrateLegacyIfNeeded()
-  if (migrated && migrated.store) return migrated
   return null
 }
 
@@ -127,8 +115,6 @@ export function updateProfile(patch) {
 
 export function clearProfile() {
   if (typeof window === 'undefined') return
-  // Only remove the per-tenant blob — leave the legacy key alone so it can
-  // still be migrated for another login on the same device.
   localStorage.removeItem(STORAGE_KEY())
   window.dispatchEvent(new CustomEvent('dokanbhai:profilechange'))
 }

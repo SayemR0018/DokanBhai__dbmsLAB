@@ -1,16 +1,15 @@
 // Unified data adapter. Prefers Supabase when reachable, otherwise falls back to localDb.
 // Tables map to the schema discovered from the APK analysis.
 //
-// TENANT SCOPING — every Supabase read/write is filtered by the authenticated
-// user's mobile number (`currentPhone`). The phone is set once by AuthContext
-// via setCurrentPhone(); pages do not need to pass it. Writes stamp `phone`
-// automatically so subsequent reads from the same tenant return the row.
+// TENANT SCOPING — `currentPhone` is the shopkeeper phone set by AuthContext.
+// Only `businesses.phone` and `dokan_profile.session_phone` are shop phones.
+// `customers.phone` and `vendors.phone` are contact numbers and must not be
+// overwritten with the shop phone. products, invoices, sale_items, transactions,
+// and payments have no shop-phone column. invoices are filtered by business_id,
+// which onboarding stores as the shop phone.
 //
-// When a table does not have a `phone` column (legacy schema), Supabase returns
-// Postgres error code 42703 ("column does not exist"). In that case we log a
-// warning and retry the query un-scoped rather than failing outright.
-//
-// localDb (the offline fallback) applies the same filter client-side.
+// When Supabase is configured, mutation and read errors are thrown. They are
+// not copied into localStorage. localDb is used only when Supabase is not configured.
 
 import { getSupabase, isSupabaseConfigured } from './supabaseClient'
 import localDb from './localDb'
@@ -36,31 +35,40 @@ const TABLES = {
   payments:     'payments',
 }
 
-// Detect "column does not exist" schema-error from Supabase/PostgREST.
-const isMissingPhoneColumn = (err) =>
-  err && (err.code === '42703' || /column .*phone.* does not exist/i.test(err?.message || ''))
+// Shop-phone column. Contact phones on customers/vendors are not tenant keys.
+const SHOP_PHONE_TABLES = new Set(['businesses'])
+// Invoices carry the shop id. Onboarding uses the shop phone as businesses.id.
+const BUSINESS_SCOPED_TABLES = new Set(['invoices'])
+
+function scopeQuery(query, table) {
+  if (!currentPhone) return query
+  if (SHOP_PHONE_TABLES.has(table)) return query.eq('phone', currentPhone)
+  if (BUSINESS_SCOPED_TABLES.has(table)) return query.eq('business_id', currentPhone)
+  return query
+}
+
+// Never stamp a shop phone onto tables that do not have that column.
+// Customer and vendor `phone` values are left exactly as the form sent them.
+function stampForTable(table, record) {
+  const row = { ...record }
+  if (table === 'businesses') {
+    if (currentPhone && !row.phone) row.phone = currentPhone
+    return row
+  }
+  if (table === 'invoices') {
+    if (currentPhone && !row.business_id) row.business_id = currentPhone
+  }
+  if (table !== 'customers' && table !== 'vendors') {
+    delete row.phone
+    delete row.session_phone
+  }
+  return row
+}
 
 async function trySupabase(fn, fallback) {
   const supabase = getSupabase()
   if (!supabase) return fallback()
-  try {
-    return await fn(supabase)
-  } catch (err) {
-    // Filter on a non-existent `phone` column — retry without the filter
-    // instead of dumping the user back to localDb. The caller controls the
-    // retry by passing the filter as part of `fn`.
-    if (isMissingPhoneColumn(err)) {
-      console.warn('[data] phone column missing on table, retrying un-scoped:', err?.message)
-      try {
-        return await fn(supabase, { skipPhoneScope: true })
-      } catch (err2) {
-        console.warn('[data] un-scoped retry failed, falling back to localDb:', err2?.message || err2)
-      }
-    } else {
-      console.warn('[data] Supabase error, falling back to localDb:', err?.message || err)
-    }
-    return fallback()
-  }
+  return await fn(supabase)
 }
 
 const mapRow = (table, row) => {
@@ -76,7 +84,9 @@ const mapRow = (table, row) => {
       sale_price: Number(row.sale_price || 0),
       stock: Number(row.stock || 0),
       min_stock: Number(row.min_stock || 0),
-      unit: row.unit || 'piece',
+      unit: row.unit || 'pcs',
+      serialTracked: !!row.serial_tracked,
+      warrantyMonths: Number(row.warranty_months || 0),
       created_at: row.created_at,
     }
   }
@@ -97,9 +107,8 @@ export const data = {
   async list(table) {
     const t = TABLES[table] || table
     return trySupabase(
-      async (sb, { skipPhoneScope } = {}) => {
-        let q = sb.from(t).select('*').order('created_at', { ascending: false })
-        if (currentPhone && !skipPhoneScope) q = q.eq('phone', currentPhone)
+      async (sb) => {
+        const q = scopeQuery(sb.from(t).select('*').order('created_at', { ascending: false }), table)
         const { data, error } = await q
         if (error) throw error
         return (data || []).map((r) => mapRow(table, r))
@@ -111,9 +120,8 @@ export const data = {
   async get(table, id) {
     const t = TABLES[table] || table
     return trySupabase(
-      async (sb, { skipPhoneScope } = {}) => {
-        let q = sb.from(t).select('*').eq('id', id)
-        if (currentPhone && !skipPhoneScope) q = q.eq('phone', currentPhone)
+      async (sb) => {
+        const q = scopeQuery(sb.from(t).select('*').eq('id', id), table)
         const { data, error } = await q.single()
         if (error) throw error
         return mapRow(table, data)
@@ -130,7 +138,7 @@ export const data = {
 
   async insert(table, record) {
     const t = TABLES[table] || table
-    const stamped = currentPhone ? { ...record, phone: currentPhone } : { ...record }
+    const stamped = stampForTable(table, record)
     return trySupabase(
       async (sb) => {
         const { data, error } = await sb.from(t).insert(stamped).select().single()
@@ -144,9 +152,8 @@ export const data = {
   async update(table, id, patch) {
     const t = TABLES[table] || table
     return trySupabase(
-      async (sb, { skipPhoneScope } = {}) => {
-        let q = sb.from(t).update(patch).eq('id', id)
-        if (currentPhone && !skipPhoneScope) q = q.eq('phone', currentPhone)
+      async (sb) => {
+        const q = scopeQuery(sb.from(t).update(stampForTable(table, patch)).eq('id', id), table)
         const { data, error } = await q.select().single()
         if (error) throw error
         return mapRow(table, data)
@@ -158,9 +165,8 @@ export const data = {
   async remove(table, id) {
     const t = TABLES[table] || table
     return trySupabase(
-      async (sb, { skipPhoneScope } = {}) => {
-        let q = sb.from(t).delete().eq('id', id)
-        if (currentPhone && !skipPhoneScope) q = q.eq('phone', currentPhone)
+      async (sb) => {
+        const q = scopeQuery(sb.from(t).delete().eq('id', id), table)
         const { error } = await q
         if (error) throw error
         return true
@@ -171,35 +177,23 @@ export const data = {
 
   // ----- Sales / Payments -----
   async createSale(payload) {
-    if (isSupabaseConfigured) {
-      const supabase = getSupabase()
-      try {
-        // Stamp the tenant phone on the RPC payload so the stored procedure
-        // can enforce row-level isolation even when the RLS policy is absent.
-        const stamped = currentPhone ? { ...payload, phone: currentPhone, session_phone: currentPhone } : payload
-        const { data, error } = await supabase.rpc('create_sale', stamped)
-        if (error) throw error
-        return data
-      } catch (err) {
-        console.warn('[data] createSale rpc failed, using local:', err?.message)
-      }
-    }
-    return localDb.createSale(payload)
+    const payloadClean = { ...payload }
+    delete payloadClean.phone
+    delete payloadClean.session_phone
+    if (currentPhone && !payloadClean.business_id) payloadClean.business_id = currentPhone
+    if (!isSupabaseConfigured) return localDb.createSale(payloadClean)
+    const supabase = getSupabase()
+    const { data, error } = await supabase.rpc('create_sale', { payload: payloadClean })
+    if (error) throw error
+    return data
   },
 
   async recordPayment(payload) {
-    if (isSupabaseConfigured) {
-      const supabase = getSupabase()
-      try {
-        const stamped = currentPhone ? { ...payload, phone: currentPhone, session_phone: currentPhone } : payload
-        const { data, error } = await supabase.rpc('record_payment', stamped)
-        if (error) throw error
-        return data
-      } catch (err) {
-        console.warn('[data] recordPayment rpc failed, using local:', err?.message)
-      }
-    }
-    return localDb.recordPayment(payload)
+    if (!isSupabaseConfigured) return localDb.recordPayment(payload)
+    const supabase = getSupabase()
+    const { data, error } = await supabase.rpc('record_payment', { payload })
+    if (error) throw error
+    return data
   },
 
   resetLocal() { localDb.reset() },

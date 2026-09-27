@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useProfile } from './context/ProfileContext'
-import data from './lib/data'
+import data, { setCurrentPhone as setDataPhone } from './lib/data'
+import { setCurrentPhone as setProfilePhone } from './lib/dokanProfile'
+import { setCurrentPhone as setLocalPhone } from './lib/localDb'
 import AppShell from './components/AppShell'
 import AdminProtected from './components/AdminProtected'
 import OnboardingModal from './components/OnboardingModal'
@@ -21,6 +23,17 @@ import NewSaleScreen from './pages/NewSaleScreen'
 import SalesScreen from './pages/SalesScreen'
 import CustomersScreen from './pages/CustomersScreen'
 import HisabScreen from './pages/HisabScreen'
+
+function readSessionPhone() {
+  if (typeof window === 'undefined') return ''
+  try {
+    const raw = localStorage.getItem('dokanbhai-auth-session')
+    const parsed = raw ? JSON.parse(raw) : null
+    return (parsed?.phone || '').replace(/\D/g, '')
+  } catch {
+    return ''
+  }
+}
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -56,19 +69,30 @@ function LoginRoute() {
 
 export default function App() {
   const isAdminRoute = window.location.pathname.startsWith('/admin')
+  const { user, loading } = useAuth()
   const { profile, complete, setProfile: setProfileCtx } = useProfile()
+  const sessionPhone = readSessionPhone()
 
- 
- if ((!profile || !complete) && !isAdminRoute)  {
+  // A stored shop session must reach /login. The setup modal only covers a device with no session.
+  if (loading && sessionPhone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-steel-400">
+        <Spinner size={32} />
+      </div>
+    )
+  }
+
+ if ((!profile || !complete) && !isAdminRoute && !sessionPhone && !user)  {
     return (
       <>
         {/* Background shell behind the modal */}
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-steel-50" />
         <OnboardingModal
           onComplete={(payload) => {
-            // Update context + seed the vertical catalog via data.setProfile.
-            // setProfileCtx synchronously flips `complete` so the <Routes />
-            // tree renders immediately without waiting for the storage event.
+            const phone = (payload?.phone || '').replace(/\D/g, '')
+            setDataPhone(phone)
+            setProfilePhone(phone)
+            setLocalPhone(phone)
             setProfileCtx(payload)
             data.setProfile(payload)
           }}

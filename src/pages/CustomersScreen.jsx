@@ -49,21 +49,24 @@ export default function CustomersScreen() {
 
   const totalDue = useMemo(() => customers.reduce((s, c) => s + Number(c.balance || 0), 0), [customers])
 
-  const phoneValid = !editing?.phone || PHONE_REGEX.test(editing?.phone || '')
+  const phoneValid = PHONE_REGEX.test(editing?.phone || '')
 
   const onSave = async () => {
-    if (!editing?.name?.trim()) return
-    // If a phone was entered, it MUST match the BD 11-digit format.
-    if (editing.phone && !PHONE_REGEX.test(editing.phone)) return
+    if (!editing?.name?.trim() || !phoneValid) return
     const payload = {
       name: editing.name.trim(),
       phone: editing.phone?.trim() || '',
       address: editing.address?.trim() || '',
       note: editing.note || '',
     }
-    if (editing.id) await data.update('customers', editing.id, payload)
-    else await data.insert('customers', { ...payload, balance: 0 })
-    setEditing(null); load()
+    try {
+      if (editing.id) await data.update('customers', editing.id, payload)
+      else await data.insert('customers', { ...payload, balance: 0 })
+      setEditing(null)
+      load()
+    } catch (err) {
+      alert('কাস্টমার সংরক্ষণ ব্যর্থ / Failed to save customer: ' + (err?.message || err))
+    }
   }
   const onDelete = async (id) => {
     if (!confirm('এই কাস্টমার মুছবেন? ইতিহাস থেকে যাবে। Delete this customer? Their history will remain.')) return
@@ -112,15 +115,15 @@ export default function CustomersScreen() {
                   {c.balance > 0 && (
                     <button
                       onClick={() => setRemindFor(c)}
-                      className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 text-xs font-semibold min-h-[36px]"
+                      className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 text-xs font-semibold min-h-[44px]"
                       title="বাকি মনে করান / Send reminder"
                     >
                       মনে করান
                     </button>
                   )}
-                  <button onClick={() => setDetail(c)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 text-xs font-semibold min-h-[36px]">View</button>
-                  <button onClick={() => setEditing(c)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 min-w-[36px] min-h-[36px]" title="সম্পাদন / Edit"><EditIcon size={14} /></button>
-                  <button onClick={() => onDelete(c.id)} className="p-2 rounded-lg text-steel-500 hover:bg-red-50 hover:text-red-600 min-w-[36px] min-h-[36px]" title="মুছুন / Delete"><TrashIcon size={14} /></button>
+                  <button onClick={() => setDetail(c)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 text-xs font-semibold min-h-[44px]">View</button>
+                  <button onClick={() => setEditing(c)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 min-w-[44px] min-h-[44px]" title="সম্পাদন / Edit"><EditIcon size={14} /></button>
+                  <button onClick={() => onDelete(c.id)} className="p-2 rounded-lg text-steel-500 hover:bg-red-50 hover:text-red-600 min-w-[44px] min-h-[44px]" title="মুছুন / Delete"><TrashIcon size={14} /></button>
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between">
@@ -220,9 +223,15 @@ function CustomerDetail({ customer, transactions, onUpdate, onRemind }) {
     const amt = Number(paymentAmount || 0)
     if (amt <= 0) return
     setSaving(true)
-    await data.recordPayment({ customer_id: customer.id, amount: amt, note: paymentNote })
-    setPaymentAmount(''); setPaymentNote(''); setSaving(false)
-    onUpdate?.()
+    try {
+      await data.recordPayment({ customer_id: customer.id, amount: amt, note: paymentNote })
+      setPaymentAmount(''); setPaymentNote('')
+      onUpdate?.()
+    } catch (err) {
+      alert('পেমেন্ট সংরক্ষণ ব্যর্থ / Failed to record payment: ' + (err?.message || err))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

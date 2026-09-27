@@ -87,18 +87,23 @@ export default function InventoryScreen() {
       stock: Number(editing.stock || 0),
       min_stock: Number(editing.min_stock || 0),
       unit: editing.unit || 'pcs',
-      serialTracked: !!editing.serialTracked,
-      warrantyMonths: Number(editing.warrantyMonths || 0),
+      serial_tracked: !!editing.serialTracked,
+      warranty_months: Number(editing.warrantyMonths || 0),
       note: editing.note || '',
     }
-    if (editing.id) {
-      await data.update('products', editing.id, payload)
-    } else {
-      await data.insert('products', payload)
+    try {
+      if (editing.id) {
+        await data.update('products', editing.id, payload)
+      } else {
+        await data.insert('products', payload)
+      }
+      setEditing(null)
+      load()
+    } catch (err) {
+      alert('স্টক সংরক্ষণ ব্যর্থ / Failed to save product: ' + (err?.message || err))
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setEditing(null)
-    load()
   }
 
   const onDelete = async (id) => {
@@ -154,7 +159,7 @@ export default function InventoryScreen() {
           <button
             type="button"
             onClick={() => setShowLow((s) => !s)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border min-h-[36px] transition ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border min-h-[44px] transition ${
               showLow
                 ? 'bg-red-500 text-white border-red-500'
                 : 'bg-white text-steel-700 border-steel-200 hover:bg-steel-50'
@@ -181,7 +186,7 @@ export default function InventoryScreen() {
           ))}
           {vendors.length > 0 && (
             <div className="ml-auto">
-              <Select value={filterVendor} onChange={(e) => setFilterVendor(e.target.value)} className="min-h-[36px]">
+              <Select value={filterVendor} onChange={(e) => setFilterVendor(e.target.value)} className="min-h-[44px]">
                 <option value="">সব সরবরাহকারী / All vendors</option>
                 {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </Select>
@@ -226,8 +231,8 @@ export default function InventoryScreen() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => setEditing(p)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 min-w-[36px] min-h-[36px]" title="সম্পাদন / Edit"><EditIcon size={14} /></button>
-                    <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg text-steel-500 hover:bg-red-50 hover:text-red-600 min-w-[36px] min-h-[36px]" title="মুছুন / Delete"><TrashIcon size={14} /></button>
+                    <button onClick={() => setEditing(p)} className="p-2 rounded-lg text-steel-500 hover:bg-steel-100 min-w-[44px] min-h-[44px]" title="সম্পাদন / Edit"><EditIcon size={14} /></button>
+                    <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg text-steel-500 hover:bg-red-50 hover:text-red-600 min-w-[44px] min-h-[44px]" title="মুছুন / Delete"><TrashIcon size={14} /></button>
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -285,10 +290,10 @@ export default function InventoryScreen() {
               <Input type="number" min="0" step="0.01" inputMode="decimal" value={editing.sale_price} onChange={(e) => setEditing({ ...editing, sale_price: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="মজুদ / Stock on hand">
-              <Input type="number" min="0" step="1" inputMode="numeric" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className="min-h-[44px]" />
+              <Input type="number" min="0" step="any" inputMode="decimal" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="সর্বনিম্ন স্টক / Minimum stock" hint="স্টক এই সংখ্যায় বা কমে গেলে সতর্কতা দেখাবে।">
-              <Input type="number" min="0" step="1" inputMode="numeric" value={editing.min_stock} onChange={(e) => setEditing({ ...editing, min_stock: e.target.value })} className="min-h-[44px]" />
+              <Input type="number" min="0" step="any" inputMode="decimal" value={editing.min_stock} onChange={(e) => setEditing({ ...editing, min_stock: e.target.value })} className="min-h-[44px]" />
             </Field>
             <Field label="একক / Unit">
               <UnitSelect value={editing.unit} onChange={(v) => setEditing({ ...editing, unit: v })} />

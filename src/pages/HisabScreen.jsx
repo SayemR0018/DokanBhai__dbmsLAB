@@ -47,10 +47,14 @@ export default function HisabScreen() {
     if (!selected) return
     const amt = Number(paymentAmount || 0)
     if (amt <= 0) return
-    await data.recordPayment({ customer_id: selected.id, amount: amt })
-    setPaymentAmount('')
-    setSelected(null)
-    load()
+    try {
+      await data.recordPayment({ customer_id: selected.id, amount: amt })
+      setPaymentAmount('')
+      setSelected(null)
+      load()
+    } catch (err) {
+      alert('পেমেন্ট সংরক্ষণ ব্যর্থ / Failed to record payment: ' + (err?.message || err))
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center py-20 text-steel-400"><Spinner size={28} /></div>

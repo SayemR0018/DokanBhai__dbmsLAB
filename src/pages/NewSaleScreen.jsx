@@ -22,6 +22,7 @@ export default function NewSaleScreen() {
   const [customer, setCustomer] = useState(null) // null = walk-in
   const [discount, setDiscount] = useState(0)
   const [paid, setPaid] = useState(0)
+  const [paidTouched, setPaidTouched] = useState(false)
   const [payType, setPayType] = useState('cash')
   const [note, setNote] = useState('')
   const [showPicker, setShowPicker] = useState(null) // 'product' | 'customer' | null
@@ -61,8 +62,12 @@ export default function NewSaleScreen() {
 
   const subtotal = useMemo(() => cart.reduce((s, it) => s + it.qty * it.unit_price, 0), [cart])
   const total = useMemo(() => Math.max(0, subtotal - Number(discount || 0)), [subtotal, discount])
-  const due = useMemo(() => Math.max(0, total - Number(paid || 0)), [total, paid])
-  const change = useMemo(() => Math.max(0, Number(paid || 0) - total), [paid, total])
+  // Cash and online collect the full total until the shopkeeper types a different amount.
+  const effectivePaid = (payType === 'cash' || payType === 'online') && !paidTouched
+    ? total
+    : Number(paid || 0)
+  const due = useMemo(() => Math.max(0, total - effectivePaid), [total, effectivePaid])
+  const change = useMemo(() => Math.max(0, effectivePaid - total), [effectivePaid, total])
 
   // Baki workflow — if the user picks credit or under-pays, a customer is
   // REQUIRED. The baki modal (B1) collects one if not already assigned.
@@ -123,7 +128,10 @@ export default function NewSaleScreen() {
   }
   const removeFromCart = (id) => setCart((c) => c.filter((i) => i.product_id !== id))
   const setPrice = (id, price) => {
-    setCart((c) => c.map((i) => i.product_id === id ? { ...i, unit_price: Math.max(0, Number(price || 0)) } : i))
+    setCart((c) => c.map((i) => {
+      const n = Number(price)
+      return i.product_id === id ? { ...i, unit_price: Number.isFinite(n) ? Math.max(0, n) : 0 } : i
+    }))
   }
   const setSerial = (id, val) => {
     setCart((c) => c.map((i) => i.product_id === id ? { ...i, serialNumber: val } : i))
@@ -136,34 +144,41 @@ export default function NewSaleScreen() {
     updateProfile({ store: { receiptWidth: next } })
   }
 
+  const saleCustomerId = () => {
+    const raw = String(customer?.id || '').trim()
+    if (!raw) return null
+    if (['cu-walkin', 'walkin', 'walk-in', 'guest', 'none', 'null'].includes(raw.toLowerCase())) return null
+    return raw
+  }
+
   const onCheckout = async () => {
     if (cart.length === 0) { alert('কার্ট খালি / Cart is empty'); return }
-    // Baki gate: must have a customer. Walk-in is allowed ONLY for cash.
-    if (bakiRequired && !customer) {
+    const customerId = saleCustomerId()
+    // Baki, or any unpaid balance, needs a real customer. Walk-in stays null.
+    if (bakiRequired && !customerId) {
       setBakiSheetOpen(true)
       return
     }
+    const items = cart.map((i) => ({
+      product_id: i.product_id,
+      name: i.name,
+      qty: Number(i.qty),
+      unit_price: Number(i.unit_price || 0),
+      unit: i.unit || 'pcs',
+      serialNumber: i.serialNumber || '',
+      warrantyNote: i.warrantyNote || '',
+    }))
     setProcessing(true)
     try {
-      // Walk-in sales have a null customer_id. The PostgreSQL stored
-      // procedure expects a sanitized payload, so we explicitly coerce
-      // everything to a clean Number / string.
       const invoice = await data.createSale({
-        customer_id: customer ? customer.id : null,
-        items: cart.map((i) => ({
-          product_id: i.product_id,
-          name: i.name,
-          qty: Number(i.qty),
-          unit_price: Number(i.unit_price),
-          serialNumber: i.serialNumber || '',
-          warrantyNote: i.warrantyNote || '',
-        })),
+        customer_id: customerId,
+        items,
         discount: Number(discount || 0),
-        paid_amount: Number(paid || 0),
+        paid_amount: Number(effectivePaid || 0),
         pay_type: payType,
         note: note || '',
       })
-      setReceipt({ ...invoice, customer })
+      setReceipt({ ...(invoice || {}), items, customer: customerId ? customer : null })
       setCartSheetOpen(false)
     } catch (err) {
       alert('বিক্রয় সংরক্ষণ ব্যর্থ / Failed to save sale: ' + (err?.message || err))
@@ -173,7 +188,7 @@ export default function NewSaleScreen() {
   }
 
   const resetSale = () => {
-    setCart([]); setCustomer(null); setDiscount(0); setPaid(0); setPayType('cash'); setNote(''); setReceipt(null); setCatalogSearch(''); setCartSheetOpen(false)
+    setCart([]); setCustomer(null); setDiscount(0); setPaid(0); setPaidTouched(false); setPayType('cash'); setNote(''); setReceipt(null); setCatalogSearch(''); setCartSheetOpen(false)
     load()
   }
 
@@ -194,7 +209,7 @@ export default function NewSaleScreen() {
   const walkIn = !customer
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-36 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-steel-400">POS / নতুন বিক্রয়</p>
@@ -304,9 +319,9 @@ export default function NewSaleScreen() {
                         />
                       </div>
                       <div className="inline-flex items-center border border-steel-200 rounded-lg overflow-hidden">
-                        <button onClick={() => updateQty(it.product_id, -stepFor(it.unit))} className="px-2 py-1.5 hover:bg-steel-50 text-steel-600"><MinusIcon size={14} /></button>
+                        <button onClick={() => updateQty(it.product_id, -stepFor(it.unit))} className="px-2 py-1.5 min-h-[44px] min-w-[44px] hover:bg-steel-50 text-steel-600"><MinusIcon size={14} /></button>
                         <span className="px-2 min-w-10 text-center text-sm font-semibold">{formatQty(it.qty, it.unit)}</span>
-                        <button onClick={() => updateQty(it.product_id, stepFor(it.unit))} className="px-2 py-1.5 hover:bg-steel-50 text-steel-600"><PlusIcon size={14} /></button>
+                        <button onClick={() => updateQty(it.product_id, stepFor(it.unit))} className="px-2 py-1.5 min-h-[44px] min-w-[44px] hover:bg-steel-50 text-steel-600"><PlusIcon size={14} /></button>
                       </div>
                       <div className="w-28 text-right font-bold text-steel-800">{formatBDT(it.qty * it.unit_price)}</div>
                       <button onClick={() => removeFromCart(it.product_id)} className="p-1.5 rounded-lg text-steel-400 hover:bg-red-50 hover:text-red-600"><TrashIcon size={14} /></button>
@@ -383,7 +398,7 @@ export default function NewSaleScreen() {
                 <span className="text-brand-600">{formatBDT(total)}</span>
               </div>
               <Field label="পরিশোধ / Paid amount (৳)">
-                <Input type="number" min="0" step="0.01" inputMode="decimal" value={paid} onChange={(e) => setPaid(Number(e.target.value || 0))} className="min-h-[44px]" />
+                <Input type="number" min="0" step="0.01" inputMode="decimal" value={paidTouched ? paid : effectivePaid} onChange={(e) => { setPaidTouched(true); setPaid(Number(e.target.value || 0)) }} className="min-h-[44px]" />
               </Field>
               <Field label="পেমেন্ট পদ্ধতি / Payment method">
                 <div className="grid grid-cols-3 gap-2">
@@ -418,7 +433,7 @@ export default function NewSaleScreen() {
                 </div>
                 <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
                   <p className="text-[10px] uppercase tracking-wide text-emerald-600 font-semibold">{change > 0 ? 'ফেরত / Change' : 'পরিশোধ / Paid'}</p>
-                  <p className="text-lg font-bold text-emerald-700">{formatBDT(change > 0 ? change : paid)}</p>
+                  <p className="text-lg font-bold text-emerald-700">{formatBDT(change > 0 ? change : effectivePaid)}</p>
                 </div>
               </div>
               <Button onClick={onCheckout} size="lg" className="w-full min-h-[48px]" disabled={processing || cart.length === 0}>
@@ -453,7 +468,7 @@ export default function NewSaleScreen() {
               <p className="text-base font-bold text-steel-800">{formatBDT(total)}</p>
             </div>
           </div>
-          <span className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[40px] inline-flex items-center">
+          <span className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px] inline-flex items-center">
             অর্ডার দেখুন / View Cart →
           </span>
         </button>
@@ -476,9 +491,9 @@ export default function NewSaleScreen() {
                         <p className="text-[11px] text-steel-500">{formatBDT(it.unit_price)} × {formatQty(it.qty, it.unit)}</p>
                       </div>
                       <div className="inline-flex items-center border border-steel-200 rounded-lg overflow-hidden">
-                        <button onClick={() => updateQty(it.product_id, -stepFor(it.unit))} className="px-2 py-2 min-h-[40px] min-w-[40px] hover:bg-steel-50"><MinusIcon size={14} /></button>
+                        <button onClick={() => updateQty(it.product_id, -stepFor(it.unit))} className="px-2 py-2 min-h-[44px] min-w-[44px] hover:bg-steel-50"><MinusIcon size={14} /></button>
                         <span className="px-2 text-sm font-semibold">{formatQty(it.qty, it.unit)}</span>
-                        <button onClick={() => updateQty(it.product_id, stepFor(it.unit))} className="px-2 py-2 min-h-[40px] min-w-[40px] hover:bg-steel-50"><PlusIcon size={14} /></button>
+                        <button onClick={() => updateQty(it.product_id, stepFor(it.unit))} className="px-2 py-2 min-h-[44px] min-w-[44px] hover:bg-steel-50"><PlusIcon size={14} /></button>
                       </div>
                       <div className="w-20 text-right font-bold text-sm text-steel-800">{formatBDT(it.qty * it.unit_price)}</div>
                       <button onClick={() => removeFromCart(it.product_id)} className="p-2 text-steel-400 hover:text-red-600"><TrashIcon size={14} /></button>
@@ -492,7 +507,7 @@ export default function NewSaleScreen() {
                   <Input type="number" min="0" step="0.01" inputMode="decimal" value={discount} onChange={(e) => setDiscount(Number(e.target.value || 0))} className="min-h-[44px]" />
                 </Field>
                 <Field label="পরিশোধ / Paid amount (৳)" className="mt-2">
-                  <Input type="number" min="0" step="0.01" inputMode="decimal" value={paid} onChange={(e) => setPaid(Number(e.target.value || 0))} className="min-h-[44px]" />
+                  <Input type="number" min="0" step="0.01" inputMode="decimal" value={paidTouched ? paid : effectivePaid} onChange={(e) => { setPaidTouched(true); setPaid(Number(e.target.value || 0)) }} className="min-h-[44px]" />
                 </Field>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {[
@@ -521,7 +536,7 @@ export default function NewSaleScreen() {
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] text-steel-500">{bakiRequired ? 'বাকি / Due' : 'পরিষ্কার / Clear'}</p>
-                    <p className={`text-lg font-bold ${bakiRequired ? 'text-red-600' : 'text-emerald-600'}`}>{formatBDT(bakiRequired ? due : paid)}</p>
+                    <p className={`text-lg font-bold ${bakiRequired ? 'text-red-600' : 'text-emerald-600'}`}>{formatBDT(bakiRequired ? due : effectivePaid)}</p>
                   </div>
                 </div>
                 <Button onClick={onCheckout} size="lg" className="w-full mt-3 min-h-[48px]" disabled={processing}>
@@ -552,7 +567,7 @@ export default function NewSaleScreen() {
               <Button variant="secondary" onClick={() => setBakiSheetOpen(false)}>বাতিল / Cancel</Button>
             )}
             {walkIn && !bakiRequired && (
-              <Button variant="secondary" onClick={() => { setPayType('cash'); setPaid(total); setBakiSheetOpen(false) }}>
+              <Button variant="secondary" onClick={() => { setPayType('cash'); setPaidTouched(false); setBakiSheetOpen(false) }}>
                 নগদ হিসেবে পরিশোধ / Pay as cash
               </Button>
             )}
@@ -563,11 +578,16 @@ export default function NewSaleScreen() {
           customers={customers}
           onPick={(c) => { setCustomer(c); setBakiSheetOpen(false) }}
           onCreate={async (payload) => {
-            const newC = await data.insert('customers', { ...payload, balance: 0 })
-            setCustomer(newC)
-            setBakiSheetOpen(false)
-            load()
-            return newC
+            try {
+              const newC = await data.insert('customers', { ...payload, balance: 0 })
+              setCustomer(newC)
+              setBakiSheetOpen(false)
+              load()
+              return newC
+            } catch (err) {
+              alert('কাস্টমার সংরক্ষণ ব্যর্থ / Failed to save customer: ' + (err?.message || err))
+              return null
+            }
           }}
         />
       </Modal>
@@ -581,9 +601,14 @@ export default function NewSaleScreen() {
           customers={customers}
           onPick={(c) => { setCustomer(c); setShowPicker(null) }}
           onCreate={async (payload) => {
-            const newC = await data.insert('customers', { ...payload, balance: 0 })
-            setCustomer(newC); setShowPicker(null); load()
-            return newC
+            try {
+              const newC = await data.insert('customers', { ...payload, balance: 0 })
+              setCustomer(newC); setShowPicker(null); load()
+              return newC
+            } catch (err) {
+              alert('কাস্টমার সংরক্ষণ ব্যর্থ / Failed to save customer: ' + (err?.message || err))
+              return null
+            }
           }}
         />
       </Modal>
@@ -673,7 +698,7 @@ function CustomerPicker({ customers, onPick, onCreate }) {
   const [search, setSearch] = useState('')
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '' })
-  const phoneValid = !form.phone || PHONE_REGEX.test(form.phone)
+  const phoneValid = PHONE_REGEX.test(form.phone)
   const filtered = customers.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
   return (
     <div>
@@ -726,7 +751,7 @@ function CustomerPicker({ customers, onPick, onCreate }) {
             <Field label="নাম / Name (আবশ্যক / required)">
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus placeholder="যেমন / e.g. Rahim Mia" />
             </Field>
-            <Field label="মোবাইল / Phone (ঐচ্ছিক / optional)" hint={!phoneValid ? 'সঠিক ১১ ডিজিটের নম্বর দিন (01XXXXXXXXX)' : '01XXXXXXXXX — বাকি ট্র্যাকিংয়ের জন্য সুপারিশকৃত'}>
+            <Field label="মোবাইল / Phone (আবশ্যক / required)" hint={!phoneValid ? 'সঠিক ১১ ডিজিটের নম্বর দিন (01XXXXXXXXX)' : '01XXXXXXXXX'}>
               <Input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
@@ -748,7 +773,7 @@ function BakiCustomerPicker({ customers, onPick, onCreate }) {
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ name: '', phone: '' })
   const [saving, setSaving] = useState(false)
-  const phoneValid = !form.phone || PHONE_REGEX.test(form.phone)
+  const phoneValid = PHONE_REGEX.test(form.phone)
   const filtered = customers.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
   const onQuickCreate = async () => {
     if (!form.name.trim() || !phoneValid || !form.phone) return

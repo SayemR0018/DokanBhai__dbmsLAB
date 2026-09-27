@@ -84,31 +84,23 @@ export function AuthProvider({ children }) {
   if (!cancelled) {
     if (stored) {
       applyTenantScope(stored.phone)
-
       const u = buildUser(stored.phone, getProfile())
-
       setUser(u)
-
       notifyTenantSwitch()
+    } else {
+      // Admin restore only when no shopkeeper session is present.
+      try {
+        const adminSession = localStorage.getItem('dokanbhai-admin-session')
+        if (adminSession) {
+          const parsedAdmin = JSON.parse(adminSession)
+          if (parsedAdmin?.email && parsedAdmin.role === 'admin') {
+            setUser(buildAdminUser(parsedAdmin.email))
+          }
+        }
+      } catch (err) {
+        console.warn('[admin-auth] Admin session restore failed:', err)
+      }
     }
-
-    // Restore admin login after page refresh
-try {
-  const adminSession = localStorage.getItem('dokanbhai-admin-session')
-
-  if (adminSession) {
-    const parsedAdmin = JSON.parse(adminSession)
-
-    if (
-      parsedAdmin?.email &&
-      parsedAdmin.role === 'admin'
-    ) {
-      setUser(buildAdminUser(parsedAdmin.email))
-    }
-  }
-} catch (err) {
-  console.warn('[admin-auth] Admin session restore failed:', err)
-}
 
     setLoading(false)
   }
