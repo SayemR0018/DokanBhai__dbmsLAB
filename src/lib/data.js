@@ -41,14 +41,15 @@ const SHOP_PHONE_TABLES = new Set(['businesses'])
 // Invoices carry the shop id. Onboarding uses the shop phone as businesses.id.
 const BUSINESS_SCOPED_TABLES = new Set(['invoices', 'products', 'customers', 'vendors', 'transactions', 'payments'])
 const OWN_ROWS_ONLY = new Set(['invoices', 'transactions', 'payments'])
+// These tables store the row time in `date`, not `created_at`.
+const ORDER_COLUMN = { invoices: 'date', transactions: 'date', payments: 'date' }
 
 function scopeQuery(query, table) {
   if (!currentPhone) return query
   if (SHOP_PHONE_TABLES.has(table)) return query.eq('phone', currentPhone)
   if (OWN_ROWS_ONLY.has(table)) return query.eq('business_id', currentPhone)
-  if (BUSINESS_SCOPED_TABLES.has(table)) {
-    return query.or(`business_id.eq.${currentPhone},business_id.is.null`)
-  }
+  // products, customers, and vendors are already limited by RLS
+  // (this shop, or a shared row with no business_id).
   return query
 }
 
@@ -113,7 +114,7 @@ export const data = {
     const t = TABLES[table] || table
     return trySupabase(
       async (sb) => {
-        const q = scopeQuery(sb.from(t).select('*').order('created_at', { ascending: false }), table)
+        const q = scopeQuery(sb.from(t).select('*').order(ORDER_COLUMN[table] || 'created_at', { ascending: false }), table)
         const { data, error } = await q
         if (error) throw error
         return (data || []).map((r) => mapRow(table, r))

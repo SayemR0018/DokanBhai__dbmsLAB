@@ -46,6 +46,7 @@ export default function LandingPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link to={appHref} className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006b4f] px-5 font-semibold text-white">{user ? 'ড্যাশবোর্ডে যান' : 'নতুন একাউন্ট খুলুন'}</Link>
                 <Link to="/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#c7f0df] px-5 font-semibold text-[#006b4f]">লগ ইন করুন</Link>
+                <Link to="/admin/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#d9deea] px-5 font-semibold text-[#273246]">অ্যাডমিন লগইন</Link>
               </div>
               <div className="mt-8 grid max-w-lg grid-cols-3 gap-4 border-t border-[#e7ebef] pt-5 text-sm">
                 <div><strong className="block text-lg">খাতা</strong><span className="text-[#6f7b8d]">বাকি ও বিক্রি</span></div>
@@ -89,7 +90,6 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-4">
             <Link to="/login">লগইন</Link>
             <Link to="/register">রেজিস্ট্রেশন</Link>
-            <Link to="/admin/login">অ্যাডমিন / Admin</Link>
           </div>
         </div>
       </footer>

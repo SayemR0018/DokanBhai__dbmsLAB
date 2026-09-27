@@ -17,9 +17,14 @@ export default function SalesScreen() {
 
   const load = async () => {
     setLoading(true)
-    const [t, i, c] = await Promise.all([data.list('transactions'), data.list('invoices'), data.list('customers')])
-    setTransactions(t); setInvoices(i); setCustomers(c)
-    setLoading(false)
+    try {
+      const [t, i, c] = await Promise.all([data.list('transactions'), data.list('invoices'), data.list('customers')])
+      setTransactions(t); setInvoices(i); setCustomers(c)
+    } catch (err) {
+      console.error('[sales] load failed:', err)
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => {
     load()

@@ -82,9 +82,6 @@ export default function PhoneGateScreen() {
           <p className="mt-6 text-sm text-[#667085]">
             নতুন দোকান? <Link to="/register" className="font-semibold text-[#006b4f]">বিনামূল্যে খাতা খুলুন</Link>
           </p>
-          <p className="mt-3 text-sm text-[#667085]">
-            প্ল্যাটফর্ম অ্যাডমিন? <Link to="/admin/login" className="font-semibold text-[#273246]">অ্যাডমিন লগইন / Admin login</Link>
-          </p>
           <p className="mt-6 text-xs text-[#667085]">◉ হেল্পলাইন: ০১৬৮২১৬৭৩৮২</p>
         </section>
       </main>

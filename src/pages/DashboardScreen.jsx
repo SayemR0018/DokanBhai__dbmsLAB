@@ -12,16 +12,21 @@ function useDashboardData() {
 
   const reload = async () => {
     setState((s) => ({ ...s, loading: true }))
-    const [transactions, products, customers, categories, vendors, invoices, businesses] = await Promise.all([
-      data.list('transactions'),
-      data.list('products'),
-      data.list('customers'),
-      data.list('categories'),
-      data.list('vendors'),
-      data.list('invoices'),
-      data.list('businesses'),
-    ])
-    setState({ loading: false, transactions, products, customers, categories, vendors, invoices, businesses })
+    try {
+      const [transactions, products, customers, categories, vendors, invoices, businesses] = await Promise.all([
+        data.list('transactions'),
+        data.list('products'),
+        data.list('customers'),
+        data.list('categories'),
+        data.list('vendors'),
+        data.list('invoices'),
+        data.list('businesses'),
+      ])
+      setState({ loading: false, transactions, products, customers, categories, vendors, invoices, businesses })
+    } catch (err) {
+      console.error('[dashboard] load failed:', err)
+      setState((s) => ({ ...s, loading: false }))
+    }
   }
 
   useEffect(() => {

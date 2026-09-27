@@ -15,9 +15,14 @@ export default function VendorsScreen() {
 
   const load = async () => {
     setLoading(true)
-    const [v, p] = await Promise.all([data.list('vendors'), data.list('products')])
-    setVendors(v); setProducts(p)
-    setLoading(false)
+    try {
+      const [v, p] = await Promise.all([data.list('vendors'), data.list('products')])
+      setVendors(v); setProducts(p)
+    } catch (err) {
+      console.error('[vendors] load failed:', err)
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => {
     load()
