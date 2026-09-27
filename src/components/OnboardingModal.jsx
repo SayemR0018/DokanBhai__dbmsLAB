@@ -13,7 +13,7 @@ const normalizePhone = (raw) => (raw || '').replace(/\D/g, '').slice(0, 11)
 // doesn't prevent the local profile from being saved and the user from
 // reaching the dashboard. Failures are logged so they are visible in
 // developer tools but never block the user.
-async function persistToSupabase({ cleanPhone, storeName, ownerName, region, businessType }) {
+export async function persistToSupabase({ cleanPhone, storeName, ownerName, region, businessType }) {
   if (!isSupabaseConfigured) return { ok: true, skipped: true }
   const supabase = getSupabase()
   if (!supabase) return { ok: true, skipped: true }

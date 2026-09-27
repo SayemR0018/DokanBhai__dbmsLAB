@@ -2,24 +2,19 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
-import { Button, Input, Field, Card } from './ui'
-import { PhoneIcon, LockIcon } from './icons'
+import SiteHeader from './SiteHeader'
 
 export default function PhoneGateScreen() {
   const { profile } = useProfile()
-  const { user, loading, login, backendsMode } = useAuth()
+  const { user, loading, login } = useAuth()
   const navigate = useNavigate()
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // If already authenticated (e.g. user refreshed on /login), bounce them
-  // straight to the dashboard instead of making them re-enter the phone.
-  if (!loading && user) {
-    return <Navigate to="/dashboard" replace />
-  }
+  if (!loading && user?.isAdmin) return <Navigate to="/admin/dashboard" replace />
+  if (!loading && user) return <Navigate to="/dashboard" replace />
 
-  const expected = (profile?.session?.phone || '').replace(/\D/g, '')
   const expectedPretty = profile?.session?.phone || ''
 
   const onSubmit = async (e) => {
@@ -41,82 +36,58 @@ export default function PhoneGateScreen() {
       setError(res.error || 'প্রবেশ ব্যর্থ / Sign in failed')
       return
     }
-    // Successful sign in — go to the dashboard. `replace` keeps the back
-    // button from dropping the user back onto the now-stale /login screen.
-    navigate('/dashboard', { replace: true })
+    navigate(res.user?.isAdmin ? '/admin/dashboard' : '/dashboard', { replace: true })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-steel-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center text-xl font-black">D</div>
-            <div>
-              <p className="text-xs uppercase tracking-widest text-steel-500">DokanBhai</p>
-              <p className="text-base font-bold text-steel-800">{profile?.store?.name || 'ডিজিটাল দোকান খাতা'}</p>
-            </div>
-          </div>
-
-          <h1 className="text-2xl font-bold text-steel-800">স্বাগতম / Welcome</h1>
-          <p className="text-sm text-steel-500 mt-1">
-            আপনার মোবাইল নম্বর দিয়ে প্রবেশ করুন। কোন পাসওয়ার্ড নেই — এই ডিভাইসে বিশ্বস্ত।
-            Sign in with your mobile number. No password — trusted on this device.
-          </p>
-
+    <div className="min-h-screen bg-[#f4f7f8] text-[#091020]" style={{ fontFamily: '"Hind Siliguri", Inter, sans-serif' }}>
+      <SiteHeader cta="register" />
+      <main className="mx-auto grid w-[min(1040px,calc(100%-1.5rem))] overflow-hidden rounded-3xl border border-[#e3e8ed] bg-white shadow-sm my-8 lg:grid-cols-2">
+        <aside className="bg-[#062035] p-8 text-white">
+          <p className="text-xs font-semibold tracking-wide text-[#8bc6b4]">● DOKANBHAI</p>
+          <h1 className="mt-4 text-4xl font-bold leading-tight">দোকান ভাই-এ<br />স্বাগতম</h1>
+          <p className="mt-3 text-sm leading-7 text-white/80">আপনার দোকানের বিক্রি, বাকি ও পণ্যের হিসাব রাখুন সহজে।</p>
+          <ul className="mt-8 space-y-4 text-sm">
+            <li><strong className="block">বাকি খাতা</strong><span className="text-white/70">এক জায়গায় সকল বাকি ও পাওনা</span></li>
+            <li><strong className="block">স্টক ও বিক্রি</strong><span className="text-white/70">কেজি, লিটার ও পিসের হিসাব</span></li>
+            <li><strong className="block">নগদ / বাকি / অনলাইন</strong><span className="text-white/70">পেমেন্ট আলাদা করে রাখা</span></li>
+          </ul>
+        </aside>
+        <section className="p-6 sm:p-8">
+          <p className="text-xs font-semibold text-[#00815d]">দোকানভাইয়ের সদস্য</p>
+          <h2 className="mt-1 text-3xl font-bold">লগ ইন করুন</h2>
+          <p className="mt-1 text-sm text-[#667085]">নিবন্ধিত মোবাইল নম্বর দিয়ে প্রবেশ করুন। এই খাতায় আলাদা ওটিপি লাগে না।</p>
           {expectedPretty && (
-            <div className="mt-4 p-3 rounded-lg bg-brand-50 border border-brand-100 text-sm">
-              <p className="text-steel-500 text-xs">নিবন্ধিত নম্বর / Registered number</p>
-              <p className="font-mono font-bold text-brand-700">{expectedPretty}</p>
-            </div>
+            <p className="mt-4 rounded-xl bg-[#e8faf3] px-3 py-2 text-sm">নিবন্ধিত নম্বর / Registered number <span className="font-mono font-bold text-[#006b4f]">{expectedPretty}</span></p>
           )}
-
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            <Field label="মোবাইল নম্বর / Mobile Number">
-              <div className="relative">
-                <PhoneIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0, 11))}
-                  placeholder="01XXXXXXXXX"
-                  className="pl-10 font-mono"
-                  autoFocus
-                />
-              </div>
-            </Field>
-
-            {error && (
-              <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-medium">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-              <LockIcon size={16} /> {submitting ? 'প্রবেশ হচ্ছে…' : 'প্রবেশ করুন / Sign in'}
-            </Button>
+            <label className="block text-sm font-semibold">
+              মোবাইল নম্বর <span className="font-normal text-[#667085]">বাংলাদেশ (+880)</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                required
+                autoFocus
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0, 11))}
+                placeholder="01XXXXXXXXX"
+                className="mt-2 w-full min-h-[48px] rounded-xl border border-[#e3e8ed] px-3 font-mono text-base"
+              />
+            </label>
+            {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <button type="submit" disabled={submitting} className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#006b4f] font-semibold text-white disabled:opacity-60">
+              {submitting ? 'প্রবেশ হচ্ছে…' : 'প্রবেশ করুন / Sign in'}
+            </button>
           </form>
-                    <div className="mt-6 border-t border-steel-200 pt-5 text-center">
-            <p className="text-sm text-steel-500 mb-3">
-              অ্যাডমিন প্রবেশ / Administrator access
-            </p>
-
-            <Link
-              to="/admin/login"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:from-blue-700 hover:to-purple-700 hover:shadow-lg"
-            >
-              <LockIcon size={16} />
-অ্যাডমিন লগইন / Admin Login
-            </Link>
-          </div>
-
-          <p className="mt-4 text-[11px] text-steel-400 text-center">
-            Backend: <span className={backendsMode === 'supabase' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{backendsMode}</span>
+          <p className="mt-6 text-sm text-[#667085]">
+            নতুন দোকান? <Link to="/register" className="font-semibold text-[#006b4f]">বিনামূল্যে খাতা খুলুন</Link>
           </p>
-        </Card>
-      </div>
+          <p className="mt-3 text-sm text-[#667085]">
+            প্ল্যাটফর্ম অ্যাডমিন? <Link to="/admin/login" className="font-semibold text-[#273246]">অ্যাডমিন লগইন / Admin login</Link>
+          </p>
+          <p className="mt-6 text-xs text-[#667085]">◉ হেল্পলাইন: ০১৬৮২১৬৭৩৮২</p>
+        </section>
+      </main>
     </div>
   )
 }

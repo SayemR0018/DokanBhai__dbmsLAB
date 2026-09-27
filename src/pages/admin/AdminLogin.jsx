@@ -123,7 +123,13 @@ export default function AdminLogin() {
                 to="/login"
                 className="text-sm font-medium text-slate-500 transition hover:text-blue-600"
               >
-                ← ব্যবহারকারী লগইনে ফিরে যান
+                ← দোকান লগইন / Shop sign in
+              </Link>
+              <Link
+                to="/"
+                className="mt-2 block text-sm font-medium text-slate-500 transition hover:text-blue-600"
+              >
+                হোম পেজ / Home
               </Link>
             </div>
 
