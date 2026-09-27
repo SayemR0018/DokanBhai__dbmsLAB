@@ -7,21 +7,11 @@ import { setCurrentPhone as setLocalDbPhone } from '../lib/localDb'
 
 const AuthContext = createContext(null)
 
-// DokanBhai uses phone-first device-trust authentication — there is no
-// password or OTP. We persist the trusted device session in localStorage
-// so it survives reloads and tab restores. We DO NOT rely on
-// supabase.auth.getSession() because that returns null for our device-trust
-// flow and would constantly wipe the user state.
-//
-// TENANT SCOPING — on every user change we call setCurrentPhone() on the
-// three singletons (data, dokanProfile, localDb) BEFORE building the user
-// object, so profile reads against the per-tenant storage key happen against
-// the right tenant. We also dispatch the global profile/dbchange events so
-// every page reloads its data for the new tenant.
 
 const STORAGE_KEY = 'dokanbhai-auth-session'
 
 const ADMIN_PHONE = '01700000000'
+const ADMIN_EMAIL = 'admin@dokanbhai.com'
 
 // Helper to scope a clean phone — strip non-digits.
 const cleanBDT = (raw) => (raw || '').replace(/\D/g, '')
@@ -51,6 +41,16 @@ const buildUser = (phone, profile) => ({
   businessType: profile?.store?.businessType || 'mudi',
   businessLabel: profile?.store?.businessLabel || '',
 })
+const buildAdminUser = (email) => ({
+  id: `admin-${email}`,
+  email,
+  phone: '',
+  name: 'Administrator',
+  role: 'admin',
+  isAdmin: true,
+  businessType: '',
+  businessLabel: '',
+})
 
 const readStored = () => {
   if (typeof window === 'undefined') return null
@@ -75,26 +75,44 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Hydrate from localStorage synchronously so the first render already knows
-  // whether the device is trusted. This avoids the "stuck on /login" loop that
-  // happens if we wait for a Supabase round-trip that always returns null.
+  
   useEffect(() => {
     let cancelled = false
     const init = async () => {
-      const stored = readStored()
-      if (!cancelled) {
-        if (stored) {
-          // Apply tenant scope BEFORE getProfile() so the profile read
-          // targets the right per-tenant storage key.
-          applyTenantScope(stored.phone)
-          const u = buildUser(stored.phone, getProfile())
-          setUser(u)
-          // Notify pages that the tenant is established on cold-boot.
-          notifyTenantSwitch()
-        }
-        setLoading(false)
-      }
+  const stored = readStored()
+
+  if (!cancelled) {
+    if (stored) {
+      applyTenantScope(stored.phone)
+
+      const u = buildUser(stored.phone, getProfile())
+
+      setUser(u)
+
+      notifyTenantSwitch()
     }
+
+    // Restore admin login after page refresh
+try {
+  const adminSession = localStorage.getItem('dokanbhai-admin-session')
+
+  if (adminSession) {
+    const parsedAdmin = JSON.parse(adminSession)
+
+    if (
+      parsedAdmin?.email &&
+      parsedAdmin.role === 'admin'
+    ) {
+      setUser(buildAdminUser(parsedAdmin.email))
+    }
+  }
+} catch (err) {
+  console.warn('[admin-auth] Admin session restore failed:', err)
+}
+
+    setLoading(false)
+  }
+}
     init()
     return () => { cancelled = true }
   }, [])
@@ -105,17 +123,13 @@ export function AuthProvider({ children }) {
       return { ok: false, error: 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX) / Enter a valid BD mobile number' }
     }
 
-    // 1. Match against the locally-stored profile session phone.
-    //    Tenant scope MUST be applied first so we read against the right
-    //    per-tenant storage key.
+
     applyTenantScope(cleanPhone)
     const profile = getProfile()
     const expectedLocal = (profile?.session?.phone || '').replace(/\D/g, '')
     let matched = expectedLocal && expectedLocal === cleanPhone
 
-    // 2. If no local profile, fall back to a Supabase lookup so that
-    //    returning users can sign in on a fresh device if their businesses /
-    //    dokan_profile row already exists in the cloud.
+   
     if (!matched && isSupabaseConfigured) {
       try {
         const supabase = getSupabase()
@@ -147,6 +161,51 @@ export function AuthProvider({ children }) {
     notifyTenantSwitch()
     return { ok: true, user: u }
   }, [])
+const adminLogin = useCallback(async (email, password) => {
+  const cleanEmail = (email || '').trim().toLowerCase()
+
+  // Demo admin credentials
+  const DEMO_ADMIN_EMAIL = 'admin@dokanbhai.com'
+  const DEMO_ADMIN_PASSWORD = 'Admin@123'
+
+  if (!cleanEmail || !password) {
+    return {
+      ok: false,
+      error: 'ইমেইল এবং পাসওয়ার্ড দিন।',
+    }
+  }
+
+  if (
+    cleanEmail !== DEMO_ADMIN_EMAIL ||
+    password !== DEMO_ADMIN_PASSWORD
+  ) {
+    return {
+      ok: false,
+      error: 'অ্যাডমিন ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।',
+    }
+  }
+
+  const adminUser = buildAdminUser(cleanEmail)
+
+  setUser(adminUser)
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(
+      'dokanbhai-admin-session',
+      JSON.stringify({
+        email: cleanEmail,
+        role: 'admin',
+      })
+    )
+  }
+
+  return {
+    ok: true,
+    user: adminUser,
+  }
+}, [])
+        
+   
 
   const signOut = useCallback(async () => {
     // Best-effort Supabase sign-out (the app does not actually rely on
@@ -157,15 +216,26 @@ export function AuthProvider({ children }) {
     }
     setUser(null)
     persist(null)
-    // Clear tenant singletons so the next login starts from a clean slate.
-    // Per tenant-scoping decision, sign-out does NOT wipe local inventory —
-    // only the explicit Reset Device flow does.
+    
+    if (typeof window !== 'undefined') {
+  localStorage.removeItem('dokanbhai-admin-session')
+}
     applyTenantScope('')
     notifyTenantSwitch()
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signOut, isSupabaseConfigured, backendsMode: isSupabaseConfigured ? 'supabase' : 'local' }}>
+<AuthContext.Provider
+  value={{
+    user,
+    loading,
+    login,
+    adminLogin,
+    signOut,
+    isSupabaseConfigured,
+    backendsMode: isSupabaseConfigured ? 'supabase' : 'local',
+  }}
+>
       {children}
     </AuthContext.Provider>
   )

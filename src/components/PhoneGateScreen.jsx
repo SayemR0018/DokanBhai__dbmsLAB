@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
 import { Button, Input, Field, Card } from './ui'
@@ -98,6 +98,19 @@ export default function PhoneGateScreen() {
               <LockIcon size={16} /> {submitting ? 'প্রবেশ হচ্ছে…' : 'প্রবেশ করুন / Sign in'}
             </Button>
           </form>
+                    <div className="mt-6 border-t border-steel-200 pt-5 text-center">
+            <p className="text-sm text-steel-500 mb-3">
+              Administrator access
+            </p>
+
+            <Link
+              to="/admin/login"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:from-blue-700 hover:to-purple-700 hover:shadow-lg"
+            >
+              <LockIcon size={16} />
+অ্যাডমিন লগইন / Admin Login
+            </Link>
+          </div>
 
           <p className="mt-4 text-[11px] text-steel-400 text-center">
             Backend: <span className={backendsMode === 'supabase' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{backendsMode}</span>

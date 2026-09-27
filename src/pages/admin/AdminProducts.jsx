@@ -3,25 +3,25 @@ import React, { useState } from 'react'
 const products = [
   {
     id: 1,
-    name: 'Rice 5kg',
-    shop: 'Rahman Store',
-    category: 'Grocery',
+    name: 'চাল ৫ কেজি',
+    shop: 'রহমান স্টোর',
+    category: 'মুদি',
     stock: 25,
     price: 450,
   },
   {
     id: 2,
-    name: 'Cooking Oil',
-    shop: 'Rahman Store',
-    category: 'Grocery',
+    name: 'রান্নার তেল',
+    shop: 'রহমান স্টোর',
+    category: 'মুদি',
     stock: 8,
     price: 180,
   },
   {
     id: 3,
-    name: 'T-Shirt',
-    shop: 'Nila Fashion',
-    category: 'Fashion',
+    name: 'টি-শার্ট',
+    shop: 'নীলা ফ্যাশন',
+    category: 'ফ্যাশন',
     stock: 35,
     price: 650,
   },
@@ -42,11 +42,11 @@ export default function AdminProducts() {
       <div className="mb-6">
 
         <h1 className="text-3xl font-bold text-slate-800">
-          Product Management
+          পণ্য ব্যবস্থাপনা
         </h1>
 
         <p className="mt-2 text-slate-500">
-          Monitor products and inventory across shops.
+          বিভিন্ন দোকানের পণ্য ও স্টকের তথ্য পর্যবেক্ষণ করুন।
         </p>
 
       </div>
@@ -55,7 +55,7 @@ export default function AdminProducts() {
 
         <input
           type="text"
-          placeholder="Search product or shop..."
+          placeholder="পণ্য অথবা দোকান খুঁজুন..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-6 w-full rounded-lg border border-slate-200 px-4 py-3 outline-none"
@@ -67,11 +67,11 @@ export default function AdminProducts() {
 
             <thead>
               <tr className="border-b text-sm text-slate-500">
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Shop</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3">Price</th>
+                <th className="px-4 py-3">পণ্য</th>
+                <th className="px-4 py-3">দোকান</th>
+                <th className="px-4 py-3">ক্যাটাগরি</th>
+                <th className="px-4 py-3">স্টক</th>
+                <th className="px-4 py-3">মূল্য</th>
               </tr>
             </thead>
 
