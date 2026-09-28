@@ -15,6 +15,7 @@ export default function HisabScreen() {
   const [selected, setSelected] = useState(null)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [remindFor, setRemindFor] = useState(null)
+  const [payError, setPayError] = useState('')
   const { profile } = useProfile()
 
   const load = async () => {
@@ -27,7 +28,11 @@ export default function HisabScreen() {
     load()
     const handler = () => load()
     window.addEventListener('dokanbhai:dbchange', handler)
-    return () => window.removeEventListener('dokanbhai:dbchange', handler)
+    window.addEventListener('dokanbhai:tenantchange', handler)
+    return () => {
+      window.removeEventListener('dokanbhai:dbchange', handler)
+      window.removeEventListener('dokanbhai:tenantchange', handler)
+    }
   }, [])
 
   const filtered = useMemo(() => {
@@ -47,13 +52,14 @@ export default function HisabScreen() {
     if (!selected) return
     const amt = Number(paymentAmount || 0)
     if (amt <= 0) return
+    setPayError('')
     try {
       await data.recordPayment({ customer_id: selected.id, amount: amt })
       setPaymentAmount('')
       setSelected(null)
       load()
     } catch (err) {
-      alert('পেমেন্ট সংরক্ষণ ব্যর্থ / Failed to record payment: ' + (err?.message || err))
+      setPayError('পেমেন্ট সংরক্ষণ ব্যর্থ / Failed to record payment: ' + (err?.message || err))
     }
   }
 
@@ -161,6 +167,7 @@ export default function HisabScreen() {
 
             <Card className="p-3 bg-brand-50 border-brand-200">
               <p className="text-xs uppercase tracking-wide text-brand-700 font-semibold mb-2">পেমেন্ট রেকর্ড (Record Payment)</p>
+              {payError && <p role="alert" className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{payError}</p>}
               <div className="flex gap-2">
                 <Input
                   type="number"

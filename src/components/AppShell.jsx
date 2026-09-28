@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
 import { isDemoMode, exitDemo } from '../lib/hardwareDemo'
+import { getSupabase, isSupabaseConfigured, setShopPhone } from '../lib/supabaseClient'
 import { reloadStore } from '../lib/localDb'
 import { initials } from '../lib/format'
 import { getBusinessType } from '../lib/verticals'
@@ -302,17 +303,35 @@ function SettingsModal({ open, onClose, profile, updateProfile, onReset, onSignO
     setBusinessType(profile?.store?.businessType || 'mudi')
   }
 
-  const save = () => {
-    updateProfile({
-      store: {
-        ...profile.store,
-        name: storeName.trim(),
-        ownerName: ownerName.trim(),
-        region: region.trim(),
-        businessType,
-        businessLabel: getBusinessType(businessType).label,
-      },
-    })
+  const save = async () => {
+    const nextStore = {
+      ...profile.store,
+      name: storeName.trim(),
+      ownerName: ownerName.trim(),
+      region: region.trim(),
+      businessType,
+      businessLabel: getBusinessType(businessType).label,
+    }
+    updateProfile({ store: nextStore })
+    const phone = (profile?.session?.phone || '').replace(/\D/g, '')
+    if (!isDemoMode() && isSupabaseConfigured && phone) {
+      const supabase = getSupabase()
+      if (supabase) {
+        setShopPhone(phone)
+        await supabase.from('businesses').update({
+          name: nextStore.name,
+          address: nextStore.region,
+          business_type: nextStore.businessType,
+        }).eq('phone', phone)
+        await supabase.from('dokan_profile').update({
+          store_name: nextStore.name,
+          owner_name: nextStore.ownerName,
+          region: nextStore.region,
+          business_type: nextStore.businessType,
+          business_label: nextStore.businessLabel,
+        }).eq('session_phone', phone)
+      }
+    }
     onClose()
   }
 

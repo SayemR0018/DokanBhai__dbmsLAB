@@ -29,7 +29,11 @@ export default function VendorsScreen() {
     load()
     const handler = () => load()
     window.addEventListener('dokanbhai:dbchange', handler)
-    return () => window.removeEventListener('dokanbhai:dbchange', handler)
+    window.addEventListener('dokanbhai:tenantchange', handler)
+    return () => {
+      window.removeEventListener('dokanbhai:dbchange', handler)
+      window.removeEventListener('dokanbhai:tenantchange', handler)
+    }
   }, [])
 
   const onSave = async () => {

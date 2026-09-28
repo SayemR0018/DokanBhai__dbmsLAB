@@ -116,7 +116,7 @@ if (typeof window !== 'undefined') {
     // for backwards compatibility) so other tabs stay in sync.
     if (!e.key) return
     if (!e.newValue) return
-    if (e.key === STORAGE_KEY() || e.key === LEGACY_KEY) {
+    if (e.key === STORAGE_KEY()) {
       try {
         db = JSON.parse(e.newValue)
         notify()
@@ -148,12 +148,16 @@ const stampTenant = (record) => {
 
 export const localDb = {
   list(table) {
-    return tenantFilter(db[table] || [])
+    const rows = db[table] || []
+    // The tour database is already isolated by its own storage key.
+    // Customer phones must not be treated as the shop phone.
+    if (isDemoMode()) return rows
+    return tenantFilter(rows)
   },
   get(table, id) {
     const row = (db[table] || []).find((r) => r.id === id) || null
     if (!row) return null
-    if (currentPhone && row.phone && row.phone !== currentPhone) return null
+    if (!isDemoMode() && currentPhone && row.phone && row.phone !== currentPhone) return null
     return row
   },
   insert(table, record) {

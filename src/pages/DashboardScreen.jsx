@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import data from '../lib/data'
+import { useProfile } from '../context/ProfileContext'
 import { formatBDT, formatDate, daysAgo, initials, avatarColor } from '../lib/format'
 import { Card, Badge, EmptyState, Spinner } from '../components/ui'
 import {
@@ -33,7 +34,11 @@ function useDashboardData() {
     reload()
     const handler = () => reload()
     window.addEventListener('dokanbhai:dbchange', handler)
-    return () => window.removeEventListener('dokanbhai:dbchange', handler)
+    window.addEventListener('dokanbhai:tenantchange', handler)
+    return () => {
+      window.removeEventListener('dokanbhai:dbchange', handler)
+      window.removeEventListener('dokanbhai:tenantchange', handler)
+    }
   }, [])
 
   return { ...state, reload }
@@ -41,6 +46,7 @@ function useDashboardData() {
 
 export default function DashboardScreen() {
   const { loading, transactions, products, customers, invoices, businesses } = useDashboardData()
+  const { profile } = useProfile()
 
   const stats = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -83,7 +89,7 @@ export default function DashboardScreen() {
       .slice(0, 6)
   }, [transactions])
 
-  const bizName = businesses?.[0]?.name || 'DokanBhai'
+  const bizName = profile?.store?.name || businesses?.[0]?.name || 'DokanBhai'
 
   if (loading) {
     return <div className="flex items-center justify-center py-20 text-steel-400"><Spinner size={28} /></div>
