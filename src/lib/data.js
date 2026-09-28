@@ -13,6 +13,7 @@
 
 import { getSupabase, isSupabaseConfigured, setShopPhone } from './supabaseClient'
 import localDb from './localDb'
+import { isDemoMode } from './hardwareDemo'
 import { getProfile as getProfileRaw, setProfile as setProfileRaw, updateProfile as updateProfileRaw, clearProfile as clearProfileRaw } from './dokanProfile'
 
 // Module-level singleton — populated by AuthContext on login/hydration/signOut.
@@ -62,7 +63,7 @@ function stampForTable(table, record) {
     return row
   }
   if (BUSINESS_SCOPED_TABLES.has(table)) {
-    if (currentPhone && !row.business_id) row.business_id = currentPhone
+    if (!isDemoMode() && currentPhone && !row.business_id) row.business_id = currentPhone
   }
   if (table !== 'customers' && table !== 'vendors') {
     delete row.phone
@@ -72,6 +73,7 @@ function stampForTable(table, record) {
 }
 
 async function trySupabase(fn, fallback) {
+  if (isDemoMode()) return fallback()
   const supabase = getSupabase()
   if (!supabase) return fallback()
   return await fn(supabase)
@@ -119,7 +121,7 @@ export const data = {
         if (error) throw error
         return (data || []).map((r) => mapRow(table, r))
       },
-      () => tenantFilter(localDb.list(table)).map((r) => mapRow(table, r))
+      () => (isDemoMode() ? localDb.list(table) : tenantFilter(localDb.list(table))).map((r) => mapRow(table, r))
     )
   },
 
@@ -186,8 +188,8 @@ export const data = {
     const payloadClean = { ...payload }
     delete payloadClean.phone
     delete payloadClean.session_phone
-    if (currentPhone && !payloadClean.business_id) payloadClean.business_id = currentPhone
-    if (!isSupabaseConfigured) return localDb.createSale(payloadClean)
+    if (!isDemoMode() && currentPhone && !payloadClean.business_id) payloadClean.business_id = currentPhone
+    if (isDemoMode() || !isSupabaseConfigured) return localDb.createSale(payloadClean)
     const supabase = getSupabase()
     const { data, error } = await supabase.rpc('create_sale', { payload: payloadClean })
     if (error) throw error
@@ -196,8 +198,8 @@ export const data = {
 
   async recordPayment(payload) {
     const payment = { ...payload }
-    if (currentPhone && !payment.business_id) payment.business_id = currentPhone
-    if (!isSupabaseConfigured) return localDb.recordPayment(payment)
+    if (!isDemoMode() && currentPhone && !payment.business_id) payment.business_id = currentPhone
+    if (isDemoMode() || !isSupabaseConfigured) return localDb.recordPayment(payment)
     const supabase = getSupabase()
     const { data, error } = await supabase.rpc('record_payment', { payload: payment })
     if (error) throw error
@@ -209,12 +211,7 @@ export const data = {
   // ----- Profile (local-only) -----
   getProfile() { return getProfileRaw() },
   setProfile(payload) {
-    const next = setProfileRaw(payload)
-    // After onboarding, populate the vertical seed.
-    if (next?.store?.businessType) {
-      localDb.seedVertical(next.store.businessType)
-    }
-    return next
+    return setProfileRaw(payload)
   },
   updateProfile(patch) { return updateProfileRaw(patch) },
   clearProfile() { return clearProfileRaw() },

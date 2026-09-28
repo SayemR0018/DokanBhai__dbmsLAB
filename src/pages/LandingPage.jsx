@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/SiteHeader'
+import { enterDemo } from '../lib/hardwareDemo'
+import { reloadStore } from '../lib/localDb'
 
 const features = [
   { tone: 'bg-[#d9f9eb] text-[#00795a]', title: 'ডিজিটাল হাল খাতা', text: 'কোন কাস্টমারের কাছে কত টাকা বাকি তার হিসাব রাখুন। খাতা হারানোর ভয় নেই।' },
@@ -11,7 +13,13 @@ const features = [
 
 export default function LandingPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const appHref = user?.isAdmin ? '/admin/dashboard' : user ? '/dashboard' : '/register'
+  const startTour = () => {
+    enterDemo()
+    reloadStore()
+    navigate('/dashboard')
+  }
 
   return (
     <div className="min-h-screen bg-white text-[#091020]" style={{ fontFamily: '"Hind Siliguri", Inter, sans-serif' }}>
@@ -46,6 +54,7 @@ export default function LandingPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link to={appHref} className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006b4f] px-5 font-semibold text-white">{user ? 'ড্যাশবোর্ডে যান' : 'নতুন একাউন্ট খুলুন'}</Link>
                 <Link to="/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#c7f0df] px-5 font-semibold text-[#006b4f]">লগ ইন করুন</Link>
+                <button type="button" onClick={startTour} className="inline-flex min-h-[44px] items-center rounded-xl border border-[#006b4f] bg-[#e8faf3] px-5 font-semibold text-[#006b4f]">দোকান ঘুরে দেখুন</button>
                 <Link to="/admin/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#d9deea] px-5 font-semibold text-[#273246]">অ্যাডমিন লগইন</Link>
               </div>
               <div className="mt-8 grid max-w-lg grid-cols-3 gap-4 border-t border-[#e7ebef] pt-5 text-sm">

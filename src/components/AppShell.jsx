@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../context/ProfileContext'
+import { isDemoMode, exitDemo } from '../lib/hardwareDemo'
+import { reloadStore } from '../lib/localDb'
 import { initials } from '../lib/format'
 import { getBusinessType } from '../lib/verticals'
 import localDb from '../lib/localDb'
@@ -41,6 +43,14 @@ export default function AppShell({ children }) {
   // /login so the next person (or the same person with a new shop) can
   // either sign back in or trigger onboarding again.
   const handleSignOut = () => {
+    if (isDemoMode()) {
+      exitDemo()
+      reloadStore()
+      setOpen(false)
+      setSettingsOpen(false)
+      navigate('/', { replace: true })
+      return
+    }
     signOut()
     setOpen(false)
     setSettingsOpen(false)
@@ -112,7 +122,7 @@ export default function AppShell({ children }) {
             className="w-full justify-center text-red-600 hover:bg-red-50 hover:border-red-200"
             title="লগআউট / Sign out"
           >
-            <LogOutIcon size={16} /> লগআউট / Sign out
+            <LogOutIcon size={16} /> {isDemoMode() ? 'হোমে ফিরুন' : 'লগআউট / Sign out'}
           </Button>
           <div className="px-3 text-[10px] font-semibold text-white/40">
             {backendsMode === 'supabase' ? 'ক্লাউড সংযুক্ত' : 'এই ফোনে সংরক্ষিত'}
@@ -141,7 +151,7 @@ export default function AppShell({ children }) {
                 onClick={handleSignOut}
                 className="w-full justify-center text-red-600 hover:bg-red-50 hover:border-red-200"
               >
-                <LogOutIcon size={16} /> লগআউট / Sign out
+                <LogOutIcon size={16} /> {isDemoMode() ? 'হোমে ফিরুন' : 'লগআউট / Sign out'}
               </Button>
             </div>
           </aside>
@@ -149,6 +159,12 @@ export default function AppShell({ children }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
+        {isDemoMode() && (
+          <div className="bg-[#ffd02a] text-[#062035] px-3 py-2 flex items-center justify-between gap-3 text-sm font-semibold">
+            <span>ট্যুর চলছে। এখানকার হিসাব সেভ হবে না।</span>
+            <button type="button" onClick={handleSignOut} className="min-h-[44px] shrink-0 rounded-xl bg-[#062035] px-3 text-white">হোমে ফিরুন</button>
+          </div>
+        )}
         <header className="md:hidden bg-[#062035] text-white px-3 py-2 flex items-center justify-between gap-2">
           <button onClick={() => setOpen(true)} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10" title="মেনু / Menu">
             <MenuIcon size={20} />

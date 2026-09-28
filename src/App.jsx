@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { isDemoMode } from './lib/hardwareDemo'
 import AppShell from './components/AppShell'
 import AdminProtected from './components/AdminProtected'
 import PhoneGateScreen from './components/PhoneGateScreen'
@@ -24,6 +25,7 @@ import HisabScreen from './pages/HisabScreen'
 function Protected({ children }) {
   const { user, loading } = useAuth()
   const location = useLocation()
+  if (isDemoMode()) return <AppShell>{children}</AppShell>
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-steel-400">

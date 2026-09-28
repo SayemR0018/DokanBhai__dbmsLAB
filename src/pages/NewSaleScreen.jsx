@@ -144,11 +144,33 @@ export default function NewSaleScreen() {
     updateProfile({ store: { receiptWidth: next } })
   }
 
+  const isDemoCustomer = (c) => /^demo\d+$/i.test((c?.name || '').trim())
+
   const saleCustomerId = () => {
     const raw = String(customer?.id || '').trim()
     if (!raw) return null
+    if (bakiRequired && isDemoCustomer(customer)) return null
     if (['cu-walkin', 'walkin', 'walk-in', 'guest', 'none', 'null'].includes(raw.toLowerCase())) return null
     return raw
+  }
+
+  const useDemoCustomer = async () => {
+    if (bakiRequired) return
+    const next = (() => {
+      let max = 0
+      for (const c of customers) {
+        const match = /^demo(\d+)$/i.exec((c.name || '').trim())
+        if (match) max = Math.max(max, Number(match[1]))
+      }
+      return `demo${max + 1}`
+    })()
+    try {
+      const created = await data.insert('customers', { name: next, phone: '', balance: 0 })
+      setCustomer(created)
+      setCustomers((list) => [created, ...list])
+    } catch (err) {
+      alert('ডেমো ক্রেতা সেভ ব্যর্থ / Failed to save demo customer: ' + (err?.message || err))
+    }
   }
 
   const onCheckout = async () => {
@@ -360,8 +382,7 @@ export default function NewSaleScreen() {
               {walkIn && <span className="ml-2 text-xs text-steel-500 font-normal">· ওয়াক-ইন কাস্টমার / Walk-in</span>}
             </h3>
             <p className="text-[11px] text-steel-500 mb-3">
-              ক্যাশ ও অনলাইন বিক্রয়ের জন্য কাস্টমার ঐচ্ছিক। বাকি বিক্রয়ে কাস্টমার আবশ্যক।
-              <br />Customer optional for cash/online; required for baki/credit.
+              ক্যাশ ও অনলাইনে ডেমো ক্রেতা (demo1, demo2…) বা সেভ করা কাস্টমার। বাকিতে আসল কাস্টমার আবশ্যক।
             </p>
             {customer ? (
               <div className="flex items-center justify-between p-3 bg-brand-50 border border-brand-200 rounded-xl">
@@ -377,9 +398,16 @@ export default function NewSaleScreen() {
                 <button onClick={() => setCustomer(null)} className="p-1.5 rounded-lg text-steel-500 hover:bg-white" title="মুছুন / Remove"><XIcon size={14} /></button>
               </div>
             ) : (
-              <Button variant="secondary" className="w-full min-h-[44px]" onClick={() => setShowPicker('customer')}>
-                <UsersIcon size={16} /> কাস্টমার বাছুন / Select customer
-              </Button>
+              <div className="space-y-2">
+                <Button variant="secondary" className="w-full min-h-[44px]" onClick={() => setShowPicker('customer')}>
+                  <UsersIcon size={16} /> কাস্টমার বাছুন / Select customer
+                </Button>
+                {!bakiRequired && (
+                  <Button variant="secondary" className="w-full min-h-[44px]" onClick={useDemoCustomer}>
+                    ডেমো ক্রেতা / Demo customer
+                  </Button>
+                )}
+              </div>
             )}
           </Card>
 
@@ -774,7 +802,7 @@ function BakiCustomerPicker({ customers, onPick, onCreate }) {
   const [form, setForm] = useState({ name: '', phone: '' })
   const [saving, setSaving] = useState(false)
   const phoneValid = PHONE_REGEX.test(form.phone)
-  const filtered = customers.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
+  const filtered = customers.filter((c) => !/^demo\d+$/i.test((c.name || '').trim()) && (c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search)))
   const onQuickCreate = async () => {
     if (!form.name.trim() || !phoneValid || !form.phone) return
     setSaving(true)

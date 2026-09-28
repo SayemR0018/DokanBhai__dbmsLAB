@@ -13,6 +13,7 @@
 
 import { getProfile } from './dokanProfile'
 import { seedFor } from './verticals'
+import { isDemoMode, DEMO_DB_KEY, buildHardwareDb } from './hardwareDemo'
 
 let currentPhone = ''
 export function setCurrentPhone(p) {
@@ -23,7 +24,7 @@ export function getCurrentPhone() {
 }
 
 const safePhone = () => currentPhone || 'anon'
-const STORAGE_KEY = () => `dokanbhai-local-db_${safePhone()}`
+const STORAGE_KEY = () => (isDemoMode() ? DEMO_DB_KEY : `dokanbhai-local-db_${safePhone()}`)
 
 const seed = () => {
   const profile = getProfile()
@@ -60,7 +61,7 @@ function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY())
     if (!raw) {
-      const data = seed()
+      const data = isDemoMode() ? buildHardwareDb() : seed()
       localStorage.setItem(STORAGE_KEY(), JSON.stringify(data))
       return data
     }
@@ -94,6 +95,11 @@ function save(db) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY(), JSON.stringify(db))
   }
+}
+
+export function reloadStore() {
+  db = load()
+  notify()
 }
 
 function notify() {

@@ -9,6 +9,7 @@
 // the first read. Legacy unscoped blobs are not copied into a new phone.
 
 import { getBusinessType } from './verticals'
+import { isDemoMode, getDemoProfile } from './hardwareDemo'
 
 let currentPhone = ''
 
@@ -58,6 +59,7 @@ const writeRaw = (key, value) => {
 }
 
 export function getProfile() {
+  if (isDemoMode()) return getDemoProfile()
   if (typeof window === 'undefined') return null
   const scoped = readRaw(STORAGE_KEY())
   if (scoped && scoped.store) return scoped
@@ -71,6 +73,7 @@ export function isProfileComplete(profile) {
 }
 
 export function setProfile({ storeName, ownerName, region, businessType, phone }) {
+  if (isDemoMode()) return getDemoProfile()
   const biz = getBusinessType(businessType)
   if (!biz) throw new Error('Unknown business type: ' + businessType)
   const profile = {
@@ -99,6 +102,7 @@ export function setProfile({ storeName, ownerName, region, businessType, phone }
 }
 
 export function updateProfile(patch) {
+  if (isDemoMode()) return getDemoProfile()
   const current = getProfile()
   if (!current) return null
   const next = {
@@ -114,6 +118,7 @@ export function updateProfile(patch) {
 }
 
 export function clearProfile() {
+  if (isDemoMode()) return
   if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY())
   window.dispatchEvent(new CustomEvent('dokanbhai:profilechange'))
