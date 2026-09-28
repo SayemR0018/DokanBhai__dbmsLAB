@@ -1,520 +1,394 @@
 # DokanBhai (দোকান ভাই)
 
-> **"Shop Brother"** — A bilingual (Bangla + English) digital khata and mobile-first Point-of-Sale (POS) web application that replaces the paper ledger at the corner store with a fast, mobile-friendly, offline-capable digital counter.
+DokanBhai is a bilingual Bangla and English ledger for a small Bangladeshi shop: মুদি, electronics, hardware, or general retail. It replaces the paper খাতা on the counter with stock, sales, receipts, and বাকি in one place.
 
-**DokanBhai** is a Digital Mudi Dokan Management & Mobile-First POS built specifically for Bangladeshi physical retailers — covering **groceries (মুদি), electronics, hardware, builders supply, and construction materials** shops. It runs entirely in the browser, works offline, prints thermal receipts in BDT (৳), and syncs to the cloud when configured.
+A new shop starts empty. Every product, customer, supplier, invoice, and payment belongs to that shop’s mobile number. One shop cannot see or change another shop’s stock.
 
----
+Live site: [https://dokanbhai.vercel.app](https://dokanbhai.vercel.app)
 
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Architecture & Tech Stack](#architecture--tech-stack)
-- [Core Features](#core-features)
-- [Local Development Setup](#local-development-setup)
-- [Database Setup Guide (Supabase)](#database-setup-guide-supabase)
-- [Environment Variables](#environment-variables)
-- [Vercel Deployment Guide](#vercel-deployment-guide)
-- [High-Level Module Map](#high-level-module-map)
-- [License](#license)
+| File | What it is |
+|------|------------|
+| [`../DokanBhai.sql`](../DokanBhai.sql) | Tables, `create_sale`, `record_payment`, and row security. Run this first. |
+| [`../seed.sql`](../seed.sql) | One hardware demo shop you can sign into. Run this second, only if you want that shop. |
+| [`public/dokanbhai-demo-import.csv`](public/dokanbhai-demo-import.csv) | A small CSV for the dashboard import button. |
 
 ---
 
-## Project Overview
+## Who it is for
 
-DokanBhai is engineered for the Bangladeshi retail ecosystem. The product replaces the paper *khata* at the corner store with a fast, mobile-friendly, offline-capable digital counter that:
+The person at the counter is the দোকান মালিক. They register with a shop name and an `01` mobile number. There is no shop password. Staff can use the same phone on that device.
 
-- Onboards in under 30 seconds with no signup.
-- Speaks Bangla first (`bn-BD`) with bilingual fallbacks for every label.
-- Treats the merchant's BD mobile number (`01XXXXXXXXX`) as a trusted-device identifier.
-- Falls back to a fully-functional in-browser database when Supabase is not configured — zero-friction demos, no backend required.
-
-### Target Business Sectors
-
-| Sector | Bengali | Notes |
-|--------|---------|-------|
-| **Groceries (Mudi Dokan)** | মুদি দোকান | Rice, flour, oil, spices, snacks, personal care |
-| **Electronics & Electrical** | ইলেকট্রনিক্স ও ইলেকট্রিক্যাল | Serial-numbered items, warranty tracking |
-| **Hardware** | হার্ডওয়্যার | Tools, fittings, fasteners |
-| **Builders Supply** | বিল্ডার্স সাপ্লাই | Plumbing, sanitary, finishing materials |
-| **Construction Materials** | নির্মাণ সামগ্রী | Sand, cement, bricks, steel, aggregates (Cft, Ton, Gaj) |
+The home page also has an admin login. Admin is separate from a shop. It lists registered shops and live sales totals. It does not open a shop’s POS.
 
 ---
 
-## Architecture & Tech Stack
+## A normal day
 
-| Layer | Technology |
-|-------|------------|
-| **UI Framework** | React 18 |
-| **Build Tool** | Vite 5 |
-| **Routing** | React Router DOM 6 |
-| **Styling** | Tailwind CSS 3 (custom `brand` green + `steel` palettes) |
-| **State Management** | React Context (`AuthContext`, `ProfileContext`) |
-| **Cloud Backend** | Supabase — hosted PostgreSQL 15 + `@supabase/supabase-js` v2 |
-| **Transactional RPCs** | PL/pgSQL functions: `create_sale`, `record_payment` |
-| **Offline Persistence** | Browser `localStorage` with in-memory mirror |
-| **Deployment** | Vercel (static SPA, `dist/` output) |
+1. Open the home page and register, or sign in with the shop mobile.
+2. The sidebar shows the shop name and the owner’s name.
+3. Add categories, suppliers, and products. Stock can be fractional (`2.5 kg`, `0.45 ton`, `12.5 cft`).
+4. On **বিক্রয় / POS**, pick products, take cash, বাকি, or online payment, and print a 58 mm or 80 mm receipt.
+5. **হিসাব খাতা** lists who still owes money. Record a payment or send a Bangla WhatsApp or SMS reminder.
+6. The dashboard shows the last 30 days of sales, cash, dues, low stock, and a 7-day chart.
 
-### High-Level Architecture
+If the internet drops and Supabase is configured, the save stays on the screen with an error. It is not copied into a hidden local ledger. A copy on this phone is used only when Supabase is not configured at all.
 
+---
+
+## Shop types
+
+Registration asks for one type. The type is a label on the shop. It does not insert products.
+
+| Key | Label |
+|-----|--------|
+| `mudi` | মুদি ও জেনারেল স্টোর |
+| `electronics` | ইলেকট্রনিক্স ও ইলেকট্রিক |
+| `hardware` | হার্ডওয়্যার ও কনস্ট্রাকশন |
+| `general` | সাধারণ রিটেইল |
+
+---
+
+## Screens
+
+### Home (`/`)
+
+Logo, a shop-front drawing, **নতুন একাউন্ট খুলুন**, **লগ ইন করুন**, **অ্যাডমিন লগইন**, and **দোকান ঘুরে দেখুন**. Admin login is linked only from this page.
+
+### Register (`/register`)
+
+Required: shop name, owner name, and a Bangladesh mobile (`01` then 3–9, then 8 digits). District and area become the address. After save, the dashboard is empty.
+
+The phone is stored on `businesses` and `dokan_profile`. Later screens send it as the `x-shop-phone` header.
+
+### Login (`/login`)
+
+Enter the same mobile. The app checks that the number exists on `businesses.phone` or `dokan_profile.session_phone`. The sidebar then loads the shop name and owner from those rows.
+
+### Dashboard (`/dashboard`)
+
+“আজকের খাতা”: sales for 30 days, cash, total বাকি, low-stock count, a 7-day bar chart, and recent sale lines.
+
+**আগের হিসাব আনুন** opens the CSV / Excel import. See [Import an old ledger](#import-an-old-ledger).
+
+### POS (`/pos`)
+
+- Search products and filter by category.
+- Quantity steps follow the unit (1 piece, 0.001 kg, 0.01 litre).
+- The line price can be changed before checkout.
+- Quantity cannot go above the stock on hand.
+- Discount is taken off the invoice. Due is `total − paid`.
+- **নগদ** and **অনলাইন** can be a walk-in (`customer_id` is null) or a saved customer, or **ডেমো ক্রেতা** (`demo1`, `demo2`, …). Those demo names are real customer rows for this shop, used when the buyer does not want to give a number.
+- **বাকি** requires a saved customer with a valid `01` number. A demo name is not enough.
+- Checkout calls `create_sale`. Stock, the invoice, the lines, and the ledger update together.
+- The receipt shows the shop, owner, area, lines, serial or warranty text when present, and **ধন্যবাদ! আবার আসবেন।**
+
+### Stock (`/inventory`)
+
+Add or edit a product: name, category, supplier, cost, sale price, stock, minimum, unit, serial tracking, warranty months, note. A red banner lists items at or under the minimum. Search, category, and supplier filters sit above the cards. A failed save stays on the form.
+
+### Sales (`/sales`)
+
+Invoices for this shop only, newest first. Filter by text, customer, pay type, and today / this week / this month. Open a row for the line items and a print button.
+
+### Customers (`/customers`)
+
+Name and 11-digit mobile are required. Address and note are optional. The list shows the running বাকি balance.
+
+### হিসাব খাতা (`/hisab`)
+
+One summary for total due, how many customers still owe, and how many are clear. The list under it is only people with a balance above zero. **মনে করান** opens a Bangla message with WhatsApp, SMS, and copy. Opening a name records a payment through `record_payment` and shows that customer’s sales and deposits.
+
+### Suppliers and categories
+
+Each row belongs to the signed-in shop. Category names are unique inside the shop, not across the whole database.
+
+### Settings
+
+Change the shop name, owner, area, type, and receipt width (58 mm or 80 mm). Save writes those fields back to `businesses` and `dokan_profile`. Sign out and device reset are in the footer of the sheet, once each.
+
+---
+
+## Two ways to see sample data
+
+These are not the same thing.
+
+### 1. Home-page tour
+
+**দোকান ঘুরে দেখুন** loads a hardware shop into this browser only (`sessionStorage` flag `dokanbhai-demo`, storage key `dokanbhai-demo-tour`). You can open every shop page. **হোমে ফিরুন** deletes that copy. Nothing is written to Supabase.
+
+Use this when you want to click around without creating a shop.
+
+### 2. Database demo shop (`seed.sql`)
+
+[`../seed.sql`](../seed.sql) inserts the same hardware shop into Postgres so you can sign in for real:
+
+| | |
+|--|--|
+| Shop | Bhai Bhai Hardware & Construction (ভাই ভাই হার্ডওয়্যার) |
+| Owner | Haji Md. Noor Islam |
+| Phone | `01719876543` |
+| Type | hardware |
+| Address | Plot 14, Gabtoli Beribadh Road, Mirpur, Dhaka |
+
+After the seed, sign in with **01719876543**. The sidebar should show that shop and **Haji Md. Noor Islam**.
+
+The file includes:
+
+- 8 categories (rod and cement, sand and brick, pipe, tools, fasteners, paint, tin, sanitary)
+- 6 suppliers (BSRM, Shah Cement, RFL, Berger, Dongcheng, a Gabtoli sand depot)
+- 20 products, including low-stock cement and rod, and one pipe at zero stock
+- 5 customers, three of them with বাকি (Rafiqul Islam ৳1,84,500, Subal Mistri ৳6,800, Dream Homes ৳4,25,000)
+- 5 invoices: credit, cash, bKash, a site chalan, and a walk-in
+- Matching sale lines, ledger rows, and 3 payments (check, cash, RTGS)
+
+Running `seed.sql` again deletes and reinserts only phone `01719876543`. Other shops are left alone.
+
+---
+
+## Import an old ledger
+
+On the dashboard, **আগের হিসাব আনুন** accepts `.csv` or `.xlsx`. Rows are saved on the signed-in shop. The tour refuses this button.
+
+Rules:
+
+- A section that is not in the file is not touched.
+- A blank cell does not wipe a value that is already saved. Only filled columns are written.
+- A matching product or category name, or a matching customer or supplier phone, updates that row. A new name is inserted.
+- If the file cannot be read, or the column names are not recognized, nothing is saved.
+- A new customer still needs an 11-digit `01` number.
+- Units must be one of: `pcs`, `kg`, `litre`, `bag`, `feet`, `cft`, `ton`, `gaj`, `box`, `pack`, `dozen`, `bundle` (short forms such as `ltr`, `ft`, `ctn` are accepted).
+
+Put many sections in one CSV with a `section` column (`category`, `vendor`, `customer`, `product`). Or use an Excel workbook whose sheet names are `categories`, `vendors`, `customers`, and `products`.
+
+```csv
+section,name,phone,address,note,balance,color,category,vendor,cost_price,sale_price,stock,min_stock,unit
+category,চাল ও আটা,,,,,,#10b981,,,,,,
+product,Miniket Rice,,,,,,চাল ও আটা,City Group,65,72,100,20,kg
+customer,Rahim Mia,01712345678,Mirpur 10,,450,,,,,,,,
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  React 18 SPA (Vite 5 + Tailwind 3 + React Router 6)        │
-│  ────────────────────────────────────────────────────────── │
-│  Pages: Dashboard · POS · Inventory · Sales · Customers     │
-│         Hisab · Vendors · Categories · Login                │
-└──────────────┬─────────────────────────┬────────────────────┘
-               │                         │
-   Supabase path│                         │ Local-only path
-               ▼                         ▼
-   ┌─────────────────────┐    ┌────────────────────────────┐
-   │  Supabase / Postgres │    │  localDb.js (localStorage) │
-   │  ─────────────────── │    │  In-memory mirror + CRUD   │
-   │  Tables: businesses, │    │  Atomic createSale /      │
-   │  categories, vendors,│    │  recordPayment shims       │
-   │  customers, products,│    │                            │
-   │  transactions,       │    │                            │
-   │  invoices, payments  │    │                            │
-   │  RPC: create_sale,   │    │                            │
-   │  record_payment      │    │                            │
-   └─────────────────────┘    └────────────────────────────┘
-                  ▲
-                  │ selected automatically by src/lib/data.js
-                  │ based on isSupabaseConfigured
+
+The ready-made sample is [`public/dokanbhai-demo-import.csv`](public/dokanbhai-demo-import.csv).
+
+---
+
+## Admin
+
+Open **অ্যাডমিন লগইন** on the home page.
+
+| | |
+|--|--|
+| Email | `admin@dokanbhai.com` |
+| Password | `Admin@123` |
+
+| Path | What you see |
+|------|----------------|
+| `/admin/dashboard` | Shop count, product count, customer count, sales total, today’s sales, this month, low stock, recent invoices |
+| `/admin/shops` | Every registered shop: name, owner, phone, type, area |
+| `/admin/products` | Products that belong to a shop |
+| `/admin/reports` | Sales grouped by shop type |
+
+These numbers come from `admin_overview`, `admin_shops`, and `admin_products`. The browser sends `x-admin-email` with the demo admin address. Log out returns to the home page. Reloading an `/admin/...` page keeps the admin session even if a shop is also signed in on this browser.
+
+---
+
+## How one shop stays separate
+
+The anon key has no user id. The app sends the shop phone on every request:
+
+```http
+x-shop-phone: 01719876543
 ```
 
-The unified adapter `src/lib/data.js` transparently routes every read/write to Supabase when configured, and falls back to `localDb.js` when not — so the same UI works in fully offline (demo) mode and cloud-synced mode.
+`shop_phone()` reads that header. Row policies allow a row only when `business_id` equals that phone. The same rule is on products, customers, vendors, categories, invoices, sale lines, transactions, and payments. A row with an empty `business_id` is not shown.
+
+`create_sale` and `record_payment` are `security definer` functions. They still check the header. A sale cannot reduce another shop’s stock, and a payment cannot reduce another shop’s customer balance. Walk-in cash stores `customer_id` as null.
+
+New text ids are generated in the app (`p-…`, `c-…`, `v-…`, `cat-…`). The tables also have a default id, and `stamp_shop_business()` fills `business_id` from the header when the insert omits it.
 
 ---
 
-## Core Features
+## Tables
 
-### 1. Phone-First Trusted Sign-In (No Signup)
-- Single-screen wizard on first launch: **Store Name**, **Owner**, **Region**, **Business Type**, and **Mobile Number**.
-- BD mobile number (`^01[3-9]\d{8}$`) becomes the trusted-device identifier — no email, no password, no OTP, no KYC.
-- Re-entry on every cold boot via `PhoneGateScreen` (state lives in `localStorage`).
+Full definitions, indexes, triggers, and policies are in [`../DokanBhai.sql`](../DokanBhai.sql). The short map:
 
-### 2. Multi-Unit Fractional Billing
-- Full unit catalog: **Pcs, Kg, Bag, Cft (cubic feet), Ton, Gaj (square yard), Box, Litre**.
-- Fractional billing — sell `0.5 kg` rice, `2.5 Cft` sand, `1.25 ton` cement.
-- Unit-aware inventory, cart, and 58/80 mm thermal receipt rendering.
+| Table | Role |
+|-------|------|
+| `businesses` | Shop. `id` and `phone` are the 11-digit mobile. `phone` is unique. |
+| `dokan_profile` | Owner name, area, type, currency `BDT`, receipt width. `session_phone` is unique. |
+| `categories` | Name and color. Unique per shop, not globally. |
+| `vendors` | Supplier name, phone, address, note. |
+| `customers` | Name, phone, address, note, running `balance` (বাকি). |
+| `products` | Cost, sale price, `stock` and `min_stock` as `numeric(12,3)`, unit, serial flag, warranty months. |
+| `invoices` | Header: subtotal, discount, total, paid, due, `pay_type` (`cash`, `credit`, `online`). |
+| `sale_items` | Lines. `product_name` is kept even if the product row is later removed. |
+| `transactions` | Flat ledger the dashboard sums. One row per sale line or payment. |
+| `payments` | Money received against বাকি. |
 
-### 3. Atomic POS Settlement (Split Tender)
-- **Split payment** per invoice: **Nogod (নগদ / cash)** vs **Baki (বাকি / credit)** with auto-calculated `due_amount`.
-- **bKash / Nagad MFS TrxID tracking** for online payments.
-- Stock validation, customer picker, discount, and one-tap checkout.
-- Backed by a single transactional Postgres RPC (`create_sale`) so partial failures don't desync stock or ledger.
-
-### 4. Baki Khata Customer Ledger
-- Persistent customer credit ledger with per-customer transaction history.
-- **1-tap WhatsApp / SMS payment reminders** with pre-filled Bangla copy via deep-link builders (`src/lib/reminders.js`).
-- Payment recording via `record_payment` RPC.
-
-### 5. Thermal Receipt Generator
-- Print-ready **80 mm** and **58 mm** POS thermal receipts branded as DokanBhai.
-- BDT `৳` currency formatting and bilingual line items.
-
-### 6. Low-Stock Alerts
-- Configurable `min_stock` per product with a dedicated dashboard widget.
-- Filter inventory by low-stock for fast reorder decisions.
-
-### 7. Electronics Serial & Warranty Tracking
-- Per-product serial-number capture and warranty expiry tracking.
-- Designed for electronics retailers selling serialized SKUs.
-
-### 8. Offline-First, Cloud-Optional
-- **Offline-first** via `localStorage` fallback with in-memory mirror.
-- Transparent background sync to Supabase (PostgreSQL) when online.
-- App is fully functional with **zero configuration** — upgrades to multi-device sync when Supabase keys are provided.
+Money columns are `numeric(12,2)`. Dates on invoices, transactions, and payments are in `date`, not `created_at`.
 
 ---
 
-## Local Development Setup
+## Stack
 
-### Prerequisites
-- **Node.js** 18+ and **npm** 9+
-- A modern browser (Chrome, Edge, Firefox, Safari)
+| Piece | Choice |
+|-------|--------|
+| UI | React 18 |
+| Build | Vite 5 |
+| Routing | React Router 6 |
+| Style | Tailwind CSS 3 |
+| Data | Supabase JS 2, PostgreSQL |
+| Spreadsheets | `xlsx` (loaded when an Excel file is imported) |
+| Hosting | Vercel static build, `dist/` |
 
-### Installation
+There is no separate Node API. The browser talks to PostgREST and the two SQL functions.
+
+---
+
+## Run it on your machine
+
+Node.js 18 or newer.
 
 ```bash
-# 1. Clone the repository
-git clone <repository-url>
-
-# 2. Install dependencies
+cd DokanVy_webapp
 npm install
-
-# 3. Copy env template (optional — app works without env vars in offline mode)
 cp .env.example .env
-
-# 4. Start the Vite dev server on http://localhost:5173
 npm run dev
 ```
 
-### Development Scripts
+The dev server is [http://localhost:5173](http://localhost:5173). `host: true` in Vite lets a phone on the same network open it too.
 
 ```bash
-npm run dev      # Start Vite dev server (port 5173, HMR enabled)
-npm run build    # Build optimized production bundle into dist/
-npm run preview  # Preview the production build on http://localhost:4173
-npm run serve    # Same as preview, pinned to port 4173
+npm run build      # production files in dist/
+npm run preview    # serve that build
+npm run serve      # preview on port 4173
 ```
 
-The dev server binds to `0.0.0.0` (`host: true`), so you can also test from a mobile device on the same LAN.
+Without the two env vars, the app keeps an empty ledger in `localStorage` under `dokanbhai-local-db_<phone>`. That is only for a machine that has no Supabase project.
 
 ---
 
-## Database Setup Guide (Supabase)
+## Database setup
 
-DokanBhai's data adapter (`src/lib/data.js`) auto-detects Supabase configuration. When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set to valid values, every CRUD operation routes to Supabase. When they're missing or placeholders, the app falls back to `localDb.js` so the UI is fully functional without a backend.
+1. Create a Supabase project.
+2. Open the SQL editor and run all of [`../DokanBhai.sql`](../DokanBhai.sql).
+3. Optional: run [`../seed.sql`](../seed.sql) to create the hardware demo shop.
+4. In **Project Settings → API**, copy the project URL and the anon public key into `.env`.
+5. Restart `npm run dev`.
 
-### 1. Create a Supabase Project
-1. Sign up / log in at [supabase.com](https://supabase.com).
-2. Create a new project (Postgres 15).
-3. Copy your **Project URL** and **anon public key** from *Project Settings → API*.
+Do not paste an older schema from a previous README. Those scripts used UUID tables and different column names. They do not match this app.
 
-### 2. Create the Required Tables
-
-Run this SQL in the Supabase SQL editor:
-
-```sql
--- Businesses (multi-store support — one row per tenant)
-create table if not exists public.businesses (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  owner_name text,
-  region text,
-  phone text,
-  business_type text,
-  business_label text,
-  currency text default 'BDT',
-  receipt_width text default '80mm',
-  locale text default 'bn-BD',
-  created_at timestamptz default now()
-);
-
--- Categories (color-tagged taxonomy)
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  name text not null,
-  color text,
-  created_at timestamptz default now()
-);
-
--- Vendors (suppliers)
-create table if not exists public.vendors (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  name text not null,
-  phone text,
-  region text,
-  notes text,
-  created_at timestamptz default now()
-);
-
--- Customers
-create table if not exists public.customers (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  name text not null,
-  phone text,
-  address text,
-  balance numeric default 0,
-  created_at timestamptz default now()
-);
-
--- Products (with low-stock threshold + warranty metadata)
-create table if not exists public.products (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  category_id uuid references public.categories(id) on delete set null,
-  vendor_id uuid references public.vendors(id) on delete set null,
-  name text not null,
-  cost_price numeric default 0,
-  sale_price numeric default 0,
-  stock numeric default 0,
-  min_stock numeric default 0,
-  unit text default 'piece',
-  serial_no text,
-  warranty_until date,
-  created_at timestamptz default now()
-);
-
--- Transactions (header — one per sale)
-create table if not exists public.transactions (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  customer_id uuid references public.customers(id) on delete set null,
-  invoice_no text,
-  subtotal numeric default 0,
-  discount numeric default 0,
-  total numeric default 0,
-  paid_cash numeric default 0,
-  paid_online numeric default 0,
-  due_amount numeric default 0,
-  status text default 'completed',
-  created_at timestamptz default now()
-);
-
--- Invoices (line items — one or more per transaction)
-create table if not exists public.invoices (
-  id uuid primary key default gen_random_uuid(),
-  transaction_id uuid references public.transactions(id) on delete cascade,
-  product_id uuid references public.products(id) on delete set null,
-  qty numeric default 0,
-  unit text default 'piece',
-  unit_price numeric default 0,
-  line_total numeric default 0,
-  created_at timestamptz default now()
-);
-
--- Payments (Baki settlements against customers)
-create table if not exists public.payments (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid references public.businesses(id) on delete cascade,
-  customer_id uuid references public.customers(id) on delete cascade,
-  amount numeric default 0,
-  method text default 'cash',          -- cash | bkash | nagad | other
-  trx_id text,                        -- MFS TrxID for online payments
-  note text,
-  created_at timestamptz default now()
-);
-```
-
-### 3. Add the Transactional RPCs
-
-The POS calls two PL/pgSQL functions for atomic operations. Add these in the Supabase SQL editor:
-
-```sql
--- create_sale: atomically inserts a transaction + invoice lines + decrements stock.
-create or replace function public.create_sale(payload jsonb)
-returns jsonb
-language plpgsql
-security definer
-as $$
-declare
-  v_tx_id uuid;
-  v_invoice jsonb;
-  v_lines jsonb := payload->'lines';
-  v_line jsonb;
-  v_total numeric := 0;
-begin
-  -- Compute totals server-side so the client cannot mismatch them.
-  if v_lines is null or jsonb_typeof(v_lines) <> 'array' then
-    raise exception 'payload.lines must be a JSON array';
-  end if;
-
-  for v_line in select * from jsonb_array_elements(v_lines)
-  loop
-    v_total := v_total + coalesce((v_line->>'line_total')::numeric, 0);
-  end loop;
-
-  insert into public.transactions (
-    business_id, customer_id, invoice_no,
-    subtotal, discount, total,
-    paid_cash, paid_online, due_amount, status
-  ) values (
-    (payload->>'business_id')::uuid,
-    nullif(payload->>'customer_id','')::uuid,
-    payload->>'invoice_no',
-    coalesce((payload->>'subtotal')::numeric, v_total),
-    coalesce((payload->>'discount')::numeric, 0),
-    coalesce((payload->>'total')::numeric, v_total),
-    coalesce((payload->>'paid_cash')::numeric, 0),
-    coalesce((payload->>'paid_online')::numeric, 0),
-    coalesce((payload->>'due_amount')::numeric, 0),
-    coalesce(payload->>'status', 'completed')
-  )
-  returning id into v_tx_id;
-
-  for v_line in select * from jsonb_array_elements(v_lines)
-  loop
-    insert into public.invoices (transaction_id, product_id, qty, unit, unit_price, line_total)
-    values (
-      v_tx_id,
-      nullif(v_line->>'product_id','')::uuid,
-      coalesce((v_line->>'qty')::numeric, 0),
-      coalesce(v_line->>'unit', 'piece'),
-      coalesce((v_line->>'unit_price')::numeric, 0),
-      coalesce((v_line->>'line_total')::numeric, 0)
-    );
-
-    -- Decrement stock atomically; never go below zero.
-    update public.products
-       set stock = greatest(0, stock - coalesce((v_line->>'qty')::numeric, 0))
-     where id = nullif(v_line->>'product_id','')::uuid;
-  end loop;
-
-  -- Mirror any Baki due onto the customer ledger.
-  if nullif(payload->>'customer_id','') is not null and coalesce((payload->>'due_amount')::numeric, 0) > 0 then
-    update public.customers
-       set balance = coalesce(balance, 0) + coalesce((payload->>'due_amount')::numeric, 0)
-     where id = nullif(payload->>'customer_id','')::uuid;
-  end if;
-
-  v_invoice := jsonb_build_object('id', v_tx_id, 'total', v_total);
-  return v_invoice;
-end;
-$$;
-
--- record_payment: settle Baki against a customer, append a payments row.
-create or replace function public.record_payment(payload jsonb)
-returns jsonb
-language plpgsql
-security definer
-as $$
-declare
-  v_payment_id uuid;
-  v_customer_id uuid := nullif(payload->>'customer_id','')::uuid;
-  v_amount numeric := coalesce((payload->>'amount')::numeric, 0);
-begin
-  if v_customer_id is null then
-    raise exception 'customer_id is required';
-  end if;
-  if v_amount <= 0 then
-    raise exception 'amount must be > 0';
-  end if;
-
-  insert into public.payments (business_id, customer_id, amount, method, trx_id, note)
-  values (
-    nullif(payload->>'business_id','')::uuid,
-    v_customer_id,
-    v_amount,
-    coalesce(payload->>'method', 'cash'),
-    payload->>'trx_id',
-    payload->>'note'
-  )
-  returning id into v_payment_id;
-
-  update public.customers
-     set balance = coalesce(balance, 0) - v_amount
-   where id = v_customer_id;
-
-  return jsonb_build_object('id', v_payment_id, 'amount', v_amount);
-end;
-$$;
-```
-
-### 4. Configure RLS (recommended for production)
-
-For production, enable Row Level Security on each table and add policies that scope reads/writes by `business_id` (or your auth model). For dev/demo you can leave RLS off — the anon key only sees what the RPCs and table grants expose.
+`seed.sql` expects the tables from `DokanBhai.sql` to exist already, including `business_id` and `dokan_profile`.
 
 ---
 
-## Environment Variables
+## Environment
 
-All env vars are **public** and exposed to the client bundle (Vite `VITE_*` prefix). Never put service-role keys here.
-
-`.env.example` (committed to repo):
+`.env` (from `.env.example`):
 
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
-If either variable is missing, empty, or still a placeholder, the app **automatically falls back** to offline `localDb` mode — no errors, no broken client.
+Vite embeds any `VITE_` value in the browser bundle. Use the anon key only. Never put the service-role key in this file or in Vercel’s client env.
+
+The production project URL is `https://rumwkbuhxtbicbpzzsst.supabase.co`.
 
 ---
 
-## Vercel Deployment Guide
+## Deploy
 
-DokanBhai is a static SPA and ships with a `vercel.json` that rewrites all routes to `/index.html` so deep links like `/pos`, `/inventory`, `/sales`, `/customers`, `/hisab`, `/vendors`, and `/categories` resolve correctly.
+`vercel.json` rewrites every path to `index.html`, so `/pos` and `/hisab` work on refresh.
 
-### 1. Push to Git
+1. Push the `DokanVy_webapp` app (the git root is that folder).
+2. Import the repo on Vercel. Framework: Vite. Build: `npm run build`. Output: `dist`.
+3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+4. Deploy. The current production URL is [https://dokanbhai.vercel.app](https://dokanbhai.vercel.app).
 
-```bash
-git init            # only if not already a repo
-git add .
-git commit -m "chore: production-ready release"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
+Pushes to `main` deploy again. Env changes need a new deploy because Vite reads them at build time.
+
+---
+
+## Routes
+
+| Path | Screen | Who can open it |
+|------|--------|-----------------|
+| `/` | Home | Anyone |
+| `/register` | New shop | Anyone |
+| `/login` | Phone sign-in | Anyone; a signed-in shop goes to the dashboard |
+| `/dashboard` | Today’s ledger and import | Shop, or the tour |
+| `/pos` | New sale | Shop, or the tour |
+| `/inventory` | Stock | Shop, or the tour |
+| `/sales` | Invoice list | Shop, or the tour |
+| `/customers` | Customers | Shop, or the tour |
+| `/hisab` | বাকি খাতা | Shop, or the tour |
+| `/vendors` | Suppliers | Shop, or the tour |
+| `/categories` | Categories | Shop, or the tour |
+| `/admin/login` | Admin sign-in | Anyone |
+| `/admin/dashboard` | Live totals | Admin |
+| `/admin/shops` | Shop list | Admin |
+| `/admin/products` | Product list | Admin |
+| `/admin/reports` | Sales by type | Admin |
+
+Unknown paths go back to `/`.
+
+---
+
+## Folder map
+
+```
+DokanVy_webapp/
+├── public/
+│   ├── dokanBhai_logo.png
+│   └── dokanbhai-demo-import.csv
+├── src/
+│   ├── App.jsx                      # Routes
+│   ├── pages/
+│   │   ├── LandingPage.jsx
+│   │   ├── RegisterPage.jsx
+│   │   ├── DashboardScreen.jsx
+│   │   ├── NewSaleScreen.jsx
+│   │   ├── InventoryScreen.jsx
+│   │   ├── SalesScreen.jsx
+│   │   ├── CustomersScreen.jsx
+│   │   ├── HisabScreen.jsx
+│   │   ├── VendorsScreen.jsx
+│   │   ├── CategoriesScreen.jsx
+│   │   └── admin/                   # Login, totals, shops, products, reports
+│   ├── components/
+│   │   ├── AppShell.jsx             # Sidebar, owner card, settings
+│   │   ├── SiteHeader.jsx
+│   │   ├── Logo.jsx
+│   │   ├── PhoneGateScreen.jsx
+│   │   └── ReminderSheet.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx          # Shop phone session and admin session
+│   │   └── ProfileContext.jsx
+│   └── lib/
+│       ├── data.js                  # list / insert / createSale / recordPayment
+│       ├── supabaseClient.js        # Client, x-shop-phone, x-admin-email
+│       ├── dokanProfile.js          # Device profile; loads name from Postgres
+│       ├── hardwareDemo.js          # Browser tour dataset
+│       ├── ledgerImport.js          # CSV and Excel
+│       ├── localDb.js               # Empty per-phone ledger when offline
+│       ├── units.js
+│       ├── format.js                # ৳
+│       └── reminders.js
+├── vercel.json
+└── package.json
+
+../DokanBhai.sql                     # Canonical schema
+../seed.sql                          # Demo hardware shop
 ```
 
-### 2. Import into Vercel
-1. Go to [vercel.com/new](https://vercel.com/new).
-2. **Import** your Git repository.
-3. Vercel auto-detects Vite. Confirm the project settings:
-   - **Framework Preset:** Vite
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-   - **Install Command:** `npm install`
-4. Click **Environment Variables** and add:
-   - `VITE_SUPABASE_URL` → `https://<your-project>.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY` → your Supabase anon public key
-5. Click **Deploy**. First build takes ~1–2 minutes.
-
-### 3. Verify the Deployment
-- Open the production URL.
-- The first launch shows the **Onboarding Modal**; completing it routes you to `/dashboard`.
-- Deep links like `https://<your-app>.vercel.app/pos` resolve to the POS page (thanks to `vercel.json` rewrites).
-- Open *DevTools → Network* and confirm Supabase requests succeed (or that offline mode is logged in the console if env vars are blank).
-
-### 4. Continuous Deployment
-Every push to `main` (or your production branch) auto-deploys via Vercel. Preview deploys are created for every PR.
-
 ---
 
-## High-Level Module Map
+## Scripts
 
-```
-src/
-├── main.jsx                          # Bootstraps BrowserRouter + Providers
-├── App.jsx                           # Routes, Protected gate, OnboardingModal
-├── styles.css                        # Tailwind layers + custom CSS variables
-├── context/
-│   ├── AuthContext.jsx               # Supabase auth + phone-first login
-│   └── ProfileContext.jsx            # Dokan profile (store, owner, region, businessType)
-├── lib/
-│   ├── supabaseClient.js             # createClient(), isSupabaseConfigured flag
-│   ├── localDb.js                    # CRUD + createSale + recordPayment (offline)
-│   ├── data.js                       # Unified Supabase↔local adapter
-│   ├── dokanProfile.js               # Read/write dokan_profile localStorage
-│   ├── units.js                      # Unit catalog + fractional qty helpers
-│   ├── format.js                     # BDT/৳, dates, initials, avatar colors
-│   ├── reminders.js                  # WhatsApp/SMS deep-link builder for Baki
-│   └── verticals.js                  # Business-type catalog + sample seeds
-├── components/
-│   ├── AppShell.jsx                  # Sidebar nav + header + SettingsModal
-│   ├── OnboardingModal.jsx           # First-launch store setup wizard + navigate('/dashboard')
-│   ├── PhoneGateScreen.jsx           # Phone-first sign-in screen
-│   ├── ReminderSheet.jsx             # Baki reminder WhatsApp/SMS drawer
-│   └── BusinessTypeChips.jsx, UnitSelect.jsx, icons.jsx, ui.jsx
-└── pages/
-    ├── DashboardScreen.jsx           # KPIs + 7-day chart + low-stock + recent sales
-    ├── NewSaleScreen.jsx             # POS: cart, customer picker, payment split, receipt
-    ├── InventoryScreen.jsx           # Products + low-stock filter + serial/warranty
-    ├── SalesScreen.jsx               # Invoice list with filters + invoice detail drawer
-    ├── CustomersScreen.jsx           # Customer directory + per-customer Hisab
-    ├── HisabScreen.jsx               # Baki ledger + payment recording + reminders
-    ├── VendorsScreen.jsx             # Supplier directory + supplied products
-    └── CategoriesScreen.jsx          # Category CRUD with color tagging
-```
-
-### Routing Map
-
-| Path | Screen | Auth |
-|------|--------|------|
-| `/` | Redirect → `/dashboard` | — |
-| `/login` | `PhoneGateScreen` | — |
-| `/dashboard` | `DashboardScreen` | Protected |
-| `/pos` | `NewSaleScreen` | Protected |
-| `/inventory` | `InventoryScreen` | Protected |
-| `/sales` | `SalesScreen` | Protected |
-| `/customers` | `CustomersScreen` | Protected |
-| `/hisab` | `HisabScreen` | Protected |
-| `/vendors` | `VendorsScreen` | Protected |
-| `/categories` | `CategoriesScreen` | Protected |
-| `*` | Redirect → `/dashboard` | — |
-
-All routes are SPA-rewritten to `/index.html` by `vercel.json` so deep links never 404.
-
----
-
-## License
-
-This project is private and proprietary. All rights reserved.
-
----
-
-**Built with ❤️ for the Bangladeshi Dokan Malik (দোকান মালিক).**
+| Command | Effect |
+|---------|--------|
+| `npm run dev` | Vite dev server |
+| `npm start` | Same as `dev` |
+| `npm run build` | Production bundle in `dist/` |
+| `npm run preview` | Serve `dist/` |
+| `npm run serve` | Serve `dist/` on port 4173 |
