@@ -26,26 +26,7 @@ export default function LandingPage() {
       <SiteHeader />
       <main>
         <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-1/2 md:block" aria-hidden="true">
-            <svg viewBox="0 0 700 570" className="h-full w-full opacity-80">
-              <g fill="none" stroke="#cad8df" strokeWidth="1">
-                <line x1="120" y1="105" x2="310" y2="45" />
-                <line x1="310" y1="45" x2="520" y2="125" />
-                <line x1="120" y1="105" x2="80" y2="310" />
-                <line x1="275" y1="385" x2="520" y2="125" />
-                <line x1="520" y1="125" x2="610" y2="315" />
-                <line x1="390" y1="230" x2="610" y2="315" />
-              </g>
-              <g>
-                <circle cx="120" cy="105" r="4" fill="#8bc6b4" />
-                <circle cx="310" cy="45" r="4" fill="#8e86e8" />
-                <circle cx="520" cy="125" r="4" fill="#56a890" />
-                <circle cx="390" cy="230" r="6" fill="#8e86e8" />
-                <circle cx="610" cy="315" r="5" fill="#56a890" />
-              </g>
-            </svg>
-          </div>
-          <div className="relative z-10 mx-auto flex min-h-[520px] w-[min(1160px,calc(100%-1.5rem))] items-center py-12">
+          <div className="relative z-10 mx-auto flex min-h-[420px] w-[min(1160px,calc(100%-1.5rem))] items-center py-12">
             <div className="max-w-xl">
               <p className="w-fit rounded-full border border-[#c7f0df] bg-[#f2fcf8] px-3 py-1 text-xs font-semibold text-[#00815d]">স্মার্ট রিটেল ব্রেন ও ডিজিটাল মুদি সমাধান</p>
               <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">দোকান-ভাই</h1>
