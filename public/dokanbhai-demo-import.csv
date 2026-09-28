@@ -1,0 +1,11 @@
+section,name,phone,address,note,balance,color,category,vendor,cost_price,sale_price,stock,min_stock,unit
+category,চাল ও আটা,,,,,,#10b981,,,,,,
+category,তেল ও মসলা,,,,,,#f59e0b,,,,,,
+category,নুন-চিনি,,,,,,#3b82f6,,,,,,
+vendor,City Group,01711000001,Dhaka,চাল ও তেল সরবরাহ,,,,,,,,,
+vendor,ACI Consumer Brands,01711000002,Tejgaon Dhaka,,,,,,,,,,
+customer,Rahim Mia,01712345678,Mirpur 10,নিয়মিত কাস্টমার,450,,,,,,,,
+customer,Karim Ullah,01812345678,Mohammadpur,,0,,,,,,,,
+product,Miniket Rice,,,,,,চাল ও আটা,City Group,65,72,100,20,kg
+product,Teer Soyabean Oil 5L,,,,,,তেল ও মসলা,City Group,820,860,25,5,litre
+product,ACI Pure Salt 1kg,,,,,,নুন-চিনি,ACI Consumer Brands,38,42,50,10,pcs

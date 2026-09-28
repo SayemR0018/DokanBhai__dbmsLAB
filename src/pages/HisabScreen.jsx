@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import data from '../lib/data'
 import { useProfile } from '../context/ProfileContext'
-import { Card, Button, Input, Badge, EmptyState, Spinner, Drawer } from '../components/ui'
+import { Button, Input, EmptyState, Spinner, Drawer } from '../components/ui'
 import ReminderSheet from '../components/ReminderSheet'
-import { SearchIcon, MoneyIcon, AlertIcon, ChevronRightIcon, UsersIcon } from '../components/icons'
-import { formatBDT, initials, avatarColor, formatDateTime, daysAgo } from '../lib/format'
+import { SearchIcon, MoneyIcon } from '../components/icons'
+import { formatBDT, initials, formatDateTime, daysAgo } from '../lib/format'
 
 export default function HisabScreen() {
   const [customers, setCustomers] = useState([])
@@ -44,7 +43,9 @@ export default function HisabScreen() {
   }, [customers, search])
 
   const totalOutstanding = useMemo(() => customers.reduce((s, c) => s + Number(c.balance || 0), 0), [customers])
-  const totalCustomersWithDue = useMemo(() => customers.filter((c) => c.balance > 0).length, [customers])
+  const totalCustomersWithDue = useMemo(() => customers.filter((c) => Number(c.balance || 0) > 0).length, [customers])
+  const cleared = customers.length - totalCustomersWithDue
+  const shopName = profile?.store?.name || ''
 
   const txsForCustomer = (cid) => transactions.filter((t) => t.customer_id === cid).sort((a, b) => new Date(b.date) - new Date(a.date))
 
@@ -66,151 +67,144 @@ export default function HisabScreen() {
   if (loading) return <div className="flex items-center justify-center py-20 text-steel-400"><Spinner size={28} /></div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-steel-400">বাকি খাতা / Credit Ledger</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-steel-800">হিসাব খাতা (Hisab Book)</h1>
-          <p className="text-sm text-steel-500 mt-1">Track outstanding balances and payment history.</p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6b7c72]">বাকি খাতা</p>
+        <h1 className="mt-1 text-2xl font-bold text-[#062035] sm:text-3xl">হিসাব খাতা</h1>
+        <p className="mt-1 text-sm text-[#526176]">{shopName ? `${shopName} · ` : ''}কার কাছে কত বাকি, আর কবে শেষ বিক্রি হয়েছে।</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-red-500 to-red-700 text-white rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-wide text-white/80">মোট বকেয়া (Total Outstanding)</p>
-          <p className="text-2xl font-bold mt-2">{formatBDT(totalOutstanding)}</p>
-          <p className="text-xs text-white/80 mt-1">All customers combined</p>
+      <section className="rounded-3xl bg-[#062035] p-5 text-white">
+        <p className="text-sm text-[#8bc6b4]">মোট বকেয়া</p>
+        <p className="mt-1 text-4xl font-bold tracking-tight">{formatBDT(totalOutstanding)}</p>
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-sm sm:grid-cols-3">
+          <div>
+            <p className="text-[#ffd29a]">বাকি কাস্টমার</p>
+            <p className="mt-1 text-xl font-bold">{totalCustomersWithDue}</p>
+          </div>
+          <div>
+            <p className="text-[#8bc6b4]">পরিশোধিত</p>
+            <p className="mt-1 text-xl font-bold">{cleared}</p>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <p className="text-white/60">মোট কাস্টমার</p>
+            <p className="mt-1 text-xl font-bold">{customers.length}</p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-wide text-white/80">বাকি কাস্টমার</p>
-          <p className="text-2xl font-bold mt-2">{totalCustomersWithDue}</p>
-          <p className="text-xs text-white/80 mt-1">Active credit accounts</p>
-        </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-wide text-white/80">পরিষ্কার (Fully Paid)</p>
-          <p className="text-2xl font-bold mt-2">{customers.length - totalCustomersWithDue}</p>
-          <p className="text-xs text-white/80 mt-1">Clear customers</p>
-        </div>
-      </div>
+      </section>
 
-      <Card className="p-4">
-        <div className="relative">
-          <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-steel-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customers with dues…" className="pl-9" />
+      <section className="overflow-hidden rounded-3xl border border-[#d5e2db] bg-white">
+        <div className="border-b border-[#e7eeea] p-4">
+          <div className="relative">
+            <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7c72]" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="নাম বা মোবাইল খুঁজুন" className="border-[#d5e2db] bg-[#f7faf8] pl-9" />
+          </div>
         </div>
-      </Card>
 
-      {filtered.length === 0 ? (
-        <Card className="p-6">
-          <EmptyState
-            icon={<AlertIcon size={32} />}
-            title="No outstanding dues"
-            description="All customers have cleared their balances."
-          />
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((c) => {
-            const txs = txsForCustomer(c.id)
-            const lastSale = txs.find((t) => t.type === 'sale')
-            return (
-              <Card key={c.id} className="p-4 hover:border-brand-200 transition cursor-pointer" onClick={() => setSelected(c)}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full text-white flex items-center justify-center font-bold" style={{ background: avatarColor(c.name) }}>
-                    {initials(c.name)}
+        {filtered.length === 0 ? (
+          <EmptyState title="বাকি নেই" description="সব কাস্টমারের হিসাব পরিষ্কার।" />
+        ) : (
+          <ul>
+            {filtered.map((c) => {
+              const txs = txsForCustomer(c.id)
+              const lastSale = txs.find((t) => t.type === 'sale')
+              return (
+                <li key={c.id} className="border-b border-[#eef3f0] last:border-0">
+                  <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
+                    <button type="button" onClick={() => setSelected(c)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e7f6ef] text-sm font-bold text-[#006b4f]">
+                        {initials(c.name)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold text-[#062035]">{c.name}</span>
+                        <span className="mt-0.5 block text-xs text-[#6b7c72]">
+                          {c.phone || 'মোবাইল নেই'}
+                          {lastSale ? ` · শেষ বিক্রি ${daysAgo(lastSale.date)}` : ''}
+                        </span>
+                      </span>
+                    </button>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <div className="text-left sm:text-right">
+                        <p className="text-lg font-bold text-[#9a3412]">{formatBDT(c.balance)}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9a3412]">বাকি</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRemindFor(c)}
+                        className="inline-flex min-h-[44px] items-center rounded-xl border border-[#d5e2db] px-3 text-sm font-semibold text-[#006b4f] hover:bg-[#f4faf7]"
+                      >
+                        মনে করান
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-steel-800 truncate">{c.name}</p>
-                    <p className="text-xs text-steel-500">{c.phone || 'No phone'} {lastSale && `· last sale ${daysAgo(lastSale.date)}`}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-extrabold text-red-600">{formatBDT(c.balance)}</p>
-                    <Badge color="red">বাকি (Due)</Badge>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setRemindFor(c) }}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600"
-                    title="বাকি মনে করান / Send reminder"
-                  >
-                    মনে করান
-                  </button>
-                  <ChevronRightIcon size={18} className="text-steel-400" />
-                </div>
-              </Card>
-            )
-          })}
-        </div>
-      )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
 
       <Drawer
         open={!!selected}
-        onClose={() => { setSelected(null); setPaymentAmount('') }}
-        title={selected?.name || 'Customer'}
+        onClose={() => { setSelected(null); setPaymentAmount(''); setPayError('') }}
+        title="কাস্টমার হিসাব"
         width="max-w-lg"
       >
         {selected && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg" style={{ background: avatarColor(selected.name) }}>
-                {initials(selected.name)}
-              </div>
-              <div>
-                <p className="font-bold text-steel-800 text-lg">{selected.name}</p>
-                <p className="text-sm text-steel-500">{selected.phone || '—'}</p>
-              </div>
+            <div className="rounded-2xl bg-[#062035] p-4 text-white">
+              <p className="text-sm text-[#8bc6b4]">{selected.phone || 'মোবাইল নেই'}</p>
+              <p className="mt-1 text-xl font-bold">{selected.name}</p>
+              <p className="mt-4 text-xs uppercase tracking-wide text-white/60">বকেয়া</p>
+              <p className="text-3xl font-bold">{formatBDT(selected.balance)}</p>
             </div>
 
-            <Card className="p-4 bg-gradient-to-br from-red-500 to-red-700 text-white border-0">
-              <p className="text-xs uppercase tracking-wide text-white/80">বকেয়া বাকি (Outstanding Balance)</p>
-              <p className="text-3xl font-extrabold mt-1">{formatBDT(selected.balance)}</p>
-            </Card>
-
-            <Card className="p-3 bg-brand-50 border-brand-200">
-              <p className="text-xs uppercase tracking-wide text-brand-700 font-semibold mb-2">পেমেন্ট রেকর্ড (Record Payment)</p>
-              {payError && <p role="alert" className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{payError}</p>}
-              <div className="flex gap-2">
+            <div className="rounded-2xl border border-[#d5e2db] p-4">
+              <p className="text-sm font-semibold text-[#062035]">পেমেন্ট নিন</p>
+              {payError && <p role="alert" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{payError}</p>}
+              <div className="mt-3 flex gap-2">
                 <Input
                   type="number"
                   min="0"
-                  placeholder="Amount"
+                  placeholder="টাকার পরিমাণ"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                 />
                 <Button onClick={onPay} disabled={!paymentAmount || Number(paymentAmount) <= 0}>
-                  <MoneyIcon size={16} /> Pay
+                  <MoneyIcon size={16} /> জমা
                 </Button>
               </div>
-              <Button variant="success" onClick={() => setRemindFor(selected)} className="w-full mt-2">
-                মনে করান (WhatsApp / SMS)
+              <Button variant="secondary" onClick={() => setRemindFor(selected)} className="mt-2 w-full">
+                মনে করান · WhatsApp / SMS
               </Button>
-            </Card>
+            </div>
 
             <div>
-              <p className="text-xs uppercase tracking-wide text-steel-400 font-semibold mb-2">পূর্ণ হিসাব (Full Hisab)</p>
-              <ul className="space-y-1.5 max-h-80 overflow-y-auto">
+              <p className="mb-2 text-sm font-semibold text-[#062035]">খাতার বিবরণ</p>
+              <ul className="max-h-80 space-y-2 overflow-y-auto">
                 {txsForCustomer(selected.id).map((t) => (
-                  <li key={t.id} className="flex items-center justify-between p-2.5 bg-steel-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-steel-800">
-                        {t.type === 'sale' ? (t.product_name || 'Sale') : 'Payment received'}
+                  <li key={t.id} className="flex items-start justify-between gap-3 rounded-2xl bg-[#f7faf8] px-3 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#062035]">
+                        {t.type === 'sale' ? (t.product_name || 'বিক্রি') : 'জমা'}
                       </p>
-                      <p className="text-xs text-steel-500">{formatDateTime(t.date)} {t.note && `· ${t.note}`}</p>
+                      <p className="mt-0.5 text-xs text-[#6b7c72]">{formatDateTime(t.date)}{t.note ? ` · ${t.note}` : ''}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       {t.type === 'sale' ? (
                         <>
-                          <p className="text-sm font-bold text-steel-800">{formatBDT(t.amount)}</p>
+                          <p className="text-sm font-bold text-[#062035]">{formatBDT(t.amount)}</p>
                           {Number(t.amount) - Number(t.paid_amount || 0) > 0 && (
-                            <p className="text-xs text-red-600">বাকি {formatBDT(Number(t.amount) - Number(t.paid_amount || 0))}</p>
+                            <p className="text-xs text-[#9a3412]">বাকি {formatBDT(Number(t.amount) - Number(t.paid_amount || 0))}</p>
                           )}
                         </>
                       ) : (
-                        <p className="text-sm font-bold text-emerald-600">- {formatBDT(t.amount)}</p>
+                        <p className="text-sm font-bold text-[#006b4f]">− {formatBDT(t.amount)}</p>
                       )}
                     </div>
                   </li>
                 ))}
-                {txsForCustomer(selected.id).length === 0 && <li className="text-sm text-steel-500 text-center py-4">No transactions.</li>}
+                {txsForCustomer(selected.id).length === 0 && <li className="py-6 text-center text-sm text-[#6b7c72]">এই কাস্টমারের কোনো এন্ট্রি নেই।</li>}
               </ul>
             </div>
           </div>

@@ -21,7 +21,7 @@ const SECTION_NAMES = {
 
 const HEADER_ALIASES = {
   section: ['section', 'type', 'ধরন'],
-  name: ['name', 'product', 'product_name', 'customer', 'customer_name', 'vendor', 'vendor_name', 'category', 'category_name', 'পণ্য', 'পণ্যের নাম', 'নাম', 'কাস্টমার', 'সরবরাহকারী', 'ক্যাটাগরি'],
+  name: ['name', 'product', 'product_name', 'পণ্য', 'পণ্যের নাম', 'নাম'],
   phone: ['phone', 'mobile', 'মোবাইল', 'ফোন'],
   address: ['address', 'ঠিকানা'],
   note: ['note', 'নোট'],
