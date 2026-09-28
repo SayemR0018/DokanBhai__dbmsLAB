@@ -91,3 +91,22 @@ export function setShopPhone(phone) {
   if (value) headers['x-shop-phone'] = value
   else delete headers['x-shop-phone']
 }
+
+function setRestHeader(name, value) {
+  if (!supabase?.rest) return
+  const headers = supabase.rest.headers
+  if (!headers) return
+  if (typeof headers.set === 'function') {
+    if (value) headers.set(name, value)
+    else headers.delete(name)
+    return
+  }
+  if (value) headers[name] = value
+  else delete headers[name]
+}
+
+// Demo admin reads use this header. Shop traffic clears it.
+export function setAdminEmail(email) {
+  const value = (email || '').trim().toLowerCase()
+  setRestHeader('x-admin-email', value)
+}

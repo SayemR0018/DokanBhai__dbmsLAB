@@ -40,17 +40,25 @@ const TABLES = {
 // Shop-phone column. Contact phones on customers/vendors are not tenant keys.
 const SHOP_PHONE_TABLES = new Set(['businesses'])
 // Invoices carry the shop id. Onboarding uses the shop phone as businesses.id.
-const BUSINESS_SCOPED_TABLES = new Set(['invoices', 'products', 'customers', 'vendors', 'transactions', 'payments'])
-const OWN_ROWS_ONLY = new Set(['invoices', 'transactions', 'payments'])
+const BUSINESS_SCOPED_TABLES = new Set(['invoices', 'products', 'customers', 'vendors', 'categories', 'transactions', 'payments'])
+const ID_PREFIX = {
+  products: 'p',
+  customers: 'c',
+  vendors: 'v',
+  categories: 'cat',
+  invoices: 'inv',
+  payments: 'pay',
+  transactions: 't',
+  businesses: 'biz',
+}
+const newId = (table) => `${ID_PREFIX[table] || 'row'}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 // These tables store the row time in `date`, not `created_at`.
 const ORDER_COLUMN = { invoices: 'date', transactions: 'date', payments: 'date' }
 
 function scopeQuery(query, table) {
   if (!currentPhone) return query
   if (SHOP_PHONE_TABLES.has(table)) return query.eq('phone', currentPhone)
-  if (OWN_ROWS_ONLY.has(table)) return query.eq('business_id', currentPhone)
-  // products, customers, and vendors are already limited by RLS
-  // (this shop, or a shared row with no business_id).
+  if (BUSINESS_SCOPED_TABLES.has(table)) return query.eq('business_id', currentPhone)
   return query
 }
 
@@ -147,6 +155,7 @@ export const data = {
   async insert(table, record) {
     const t = TABLES[table] || table
     const stamped = stampForTable(table, record)
+    if (!stamped.id) stamped.id = newId(table)
     return trySupabase(
       async (sb) => {
         const { data, error } = await sb.from(t).insert(stamped).select().single()

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { getSupabase, isSupabaseConfigured } from '../lib/supabaseClient'
+import { getSupabase, isSupabaseConfigured, setAdminEmail } from '../lib/supabaseClient'
 import { getProfile } from '../lib/dokanProfile'
 import { setCurrentPhone as setDataPhone } from '../lib/data'
 import { setCurrentPhone as setProfilePhone } from '../lib/dokanProfile'
@@ -20,9 +20,22 @@ const cleanBDT = (raw) => (raw || '').replace(/\D/g, '')
 // Call this BEFORE any getProfile() / data.list() so reads target the right tenant.
 const applyTenantScope = (phone) => {
   const p = cleanBDT(phone)
+  setAdminEmail('')
   setDataPhone(p)
   setProfilePhone(p)
   setLocalDbPhone(p)
+}
+
+const readAdminUser = () => {
+  try {
+    const raw = localStorage.getItem('dokanbhai-admin-session')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed?.email && parsed.role === 'admin') return buildAdminUser(parsed.email)
+  } catch (err) {
+    console.warn('[admin-auth] Admin session restore failed:', err)
+  }
+  return null
 }
 
 // Re-emit the global events so every mounted page re-fetches its data.
@@ -80,26 +93,25 @@ export function AuthProvider({ children }) {
     let cancelled = false
     const init = async () => {
   const stored = readStored()
+  const onAdminRoute = typeof window !== 'undefined'
+    && window.location.pathname.startsWith('/admin')
+    && window.location.pathname !== '/admin/login'
 
   if (!cancelled) {
-    if (stored) {
+    const adminUser = readAdminUser()
+    if (onAdminRoute && adminUser) {
+      applyTenantScope('')
+      setAdminEmail(adminUser.email)
+      setUser(adminUser)
+    } else if (stored) {
       applyTenantScope(stored.phone)
       const u = buildUser(stored.phone, getProfile())
       setUser(u)
       notifyTenantSwitch()
-    } else {
-      // Admin restore only when no shopkeeper session is present.
-      try {
-        const adminSession = localStorage.getItem('dokanbhai-admin-session')
-        if (adminSession) {
-          const parsedAdmin = JSON.parse(adminSession)
-          if (parsedAdmin?.email && parsedAdmin.role === 'admin') {
-            setUser(buildAdminUser(parsedAdmin.email))
-          }
-        }
-      } catch (err) {
-        console.warn('[admin-auth] Admin session restore failed:', err)
-      }
+    } else if (adminUser) {
+      applyTenantScope('')
+      setAdminEmail(adminUser.email)
+      setUser(adminUser)
     }
 
     setLoading(false)
@@ -179,6 +191,8 @@ const adminLogin = useCallback(async (email, password) => {
 
   const adminUser = buildAdminUser(cleanEmail)
 
+  applyTenantScope('')
+  setAdminEmail(cleanEmail)
   setUser(adminUser)
 
   if (typeof window !== 'undefined') {

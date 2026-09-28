@@ -391,27 +391,6 @@ function SettingsModal({ open, onClose, profile, updateProfile, onReset, onSignO
               Profile ID ব্যবহার করে প্রবেশ করুন (Phone-first sign in)
             </div>
           </section>
-
-          <hr className="border-steel-100" />
-
-          {/* Section 2 — Session / device reset (destructive) */}
-          <section>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-steel-500 mb-2">
-              সেশন ও ডিভাইস রিসেট / Session &amp; Device Reset
-            </h3>
-            <p className="text-sm text-steel-600 mb-3">
-              অন্য অ্যাকাউন্টে সুইচ করতে লগআউট করুন অথবা সম্পূর্ণ ডিভাইসটি পরিষ্কার করুন।
-              Switch accounts by signing out, or wipe this device entirely.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => { onSignOut(); onClose() }} className="text-red-600 hover:bg-red-50">
-                <LogOutIcon size={14} /> লগআউট / Sign out
-              </Button>
-              <Button variant="danger" onClick={() => setResetOpen(true)}>
-                ডিভাইস রিসেট / Reset device
-              </Button>
-            </div>
-          </section>
         </div>
       </Modal>
 

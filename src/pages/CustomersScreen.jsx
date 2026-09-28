@@ -18,6 +18,7 @@ export default function CustomersScreen() {
   const [editing, setEditing] = useState(null)
   const [detail, setDetail] = useState(null)
   const [remindFor, setRemindFor] = useState(null)
+  const [saveError, setSaveError] = useState('')
   const { profile } = useProfile()
 
   const load = async () => {
@@ -59,13 +60,14 @@ export default function CustomersScreen() {
       address: editing.address?.trim() || '',
       note: editing.note || '',
     }
+    setSaveError('')
     try {
       if (editing.id) await data.update('customers', editing.id, payload)
       else await data.insert('customers', { ...payload, balance: 0 })
       setEditing(null)
       load()
     } catch (err) {
-      alert('কাস্টমার সংরক্ষণ ব্যর্থ / Failed to save customer: ' + (err?.message || err))
+      setSaveError('কাস্টমার সংরক্ষণ ব্যর্থ / Failed to save customer: ' + (err?.message || err))
     }
   }
   const onDelete = async (id) => {
@@ -141,7 +143,7 @@ export default function CustomersScreen() {
 
       <Modal
         open={!!editing}
-        onClose={() => setEditing(null)}
+        onClose={() => { setSaveError(''); setEditing(null) }}
         title={editing?.id ? 'কাস্টমার সম্পাদন / Edit customer' : 'নতুন কাস্টমার / New customer'}
         footer={
           <div className="flex justify-end gap-2">
@@ -152,6 +154,7 @@ export default function CustomersScreen() {
       >
         {editing && (
           <div className="space-y-3">
+            {saveError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</p>}
             <Field label="কাস্টমারের নাম / Customer name (আবশ্যক / required)">
               <Input
                 value={editing.name}

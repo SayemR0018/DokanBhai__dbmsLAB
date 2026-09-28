@@ -10,6 +10,7 @@ export default function CategoriesScreen() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
+  const [saveError, setSaveError] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -26,12 +27,18 @@ export default function CategoriesScreen() {
 
   const onSave = async () => {
     if (!editing.name?.trim()) return
-    if (editing.id) {
-      await data.update('categories', editing.id, { name: editing.name.trim(), color: editing.color })
-    } else {
-      await data.insert('categories', { name: editing.name.trim(), color: editing.color })
+    setSaveError('')
+    try {
+      if (editing.id) {
+        await data.update('categories', editing.id, { name: editing.name.trim(), color: editing.color })
+      } else {
+        await data.insert('categories', { name: editing.name.trim(), color: editing.color })
+      }
+      setEditing(null)
+      load()
+    } catch (err) {
+      setSaveError('ক্যাটাগরি সংরক্ষণ ব্যর্থ / Failed to save category: ' + (err?.message || err))
     }
-    setEditing(null); load()
   }
   const onDelete = async (id) => {
     if (!confirm('Delete this category?')) return
@@ -94,7 +101,7 @@ export default function CategoriesScreen() {
 
       <Modal
         open={!!editing}
-        onClose={() => setEditing(null)}
+        onClose={() => { setSaveError(''); setEditing(null) }}
         title={editing?.id ? 'Edit category' : 'New category'}
         footer={
           <div className="flex justify-end gap-2">
@@ -105,6 +112,7 @@ export default function CategoriesScreen() {
       >
         {editing && (
           <div className="space-y-4">
+            {saveError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</p>}
             <Field label="Name">
               <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. চাল ও আটা / Rice & Flour" />
             </Field>

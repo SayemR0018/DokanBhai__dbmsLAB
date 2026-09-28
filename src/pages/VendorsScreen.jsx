@@ -12,6 +12,7 @@ export default function VendorsScreen() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [detail, setDetail] = useState(null)
+  const [saveError, setSaveError] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -34,9 +35,15 @@ export default function VendorsScreen() {
   const onSave = async () => {
     if (!editing.name?.trim()) return
     const payload = { name: editing.name.trim(), phone: editing.phone?.trim() || '', address: editing.address?.trim() || '', note: editing.note || '' }
-    if (editing.id) await data.update('vendors', editing.id, payload)
-    else await data.insert('vendors', payload)
-    setEditing(null); load()
+    setSaveError('')
+    try {
+      if (editing.id) await data.update('vendors', editing.id, payload)
+      else await data.insert('vendors', payload)
+      setEditing(null)
+      load()
+    } catch (err) {
+      setSaveError('সরবরাহকারী সংরক্ষণ ব্যর্থ / Failed to save vendor: ' + (err?.message || err))
+    }
   }
   const onDelete = async (id) => {
     if (!confirm('Delete this vendor?')) return
@@ -96,7 +103,7 @@ export default function VendorsScreen() {
 
       <Modal
         open={!!editing}
-        onClose={() => setEditing(null)}
+        onClose={() => { setSaveError(''); setEditing(null) }}
         title={editing?.id ? 'Edit vendor' : 'New vendor'}
         footer={
           <div className="flex justify-end gap-2">
@@ -107,6 +114,7 @@ export default function VendorsScreen() {
       >
         {editing && (
           <div className="space-y-3">
+            {saveError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</p>}
             <Field label="Name"><Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Supplier name" /></Field>
             <Field label="Phone"><Input value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} placeholder="Optional" /></Field>
             <Field label="Address"><Input value={editing.address} onChange={(e) => setEditing({ ...editing, address: e.target.value })} placeholder="Optional" /></Field>

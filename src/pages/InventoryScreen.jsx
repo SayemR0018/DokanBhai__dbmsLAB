@@ -31,6 +31,7 @@ export default function InventoryScreen() {
   const [showLow, setShowLow] = useState(false)
   const [editing, setEditing] = useState(null) // null or product or { ...blank }
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -79,6 +80,7 @@ export default function InventoryScreen() {
   const onSave = async () => {
     if (!editing.name?.trim()) return
     setSaving(true)
+    setSaveError('')
     const payload = {
       name: editing.name.trim(),
       category_id: editing.category_id || null,
@@ -101,7 +103,7 @@ export default function InventoryScreen() {
       setEditing(null)
       load()
     } catch (err) {
-      alert('স্টক সংরক্ষণ ব্যর্থ / Failed to save product: ' + (err?.message || err))
+      setSaveError('স্টক সংরক্ষণ ব্যর্থ / Failed to save product: ' + (err?.message || err))
     } finally {
       setSaving(false)
     }
@@ -257,7 +259,7 @@ export default function InventoryScreen() {
       {/* Add/Edit Modal */}
       <Modal
         open={!!editing}
-        onClose={() => setEditing(null)}
+        onClose={() => { setSaveError(''); setEditing(null) }}
         title={editing?.id ? 'পণ্য সম্পাদন / Edit product' : 'নতুন পণ্য / Add product'}
         size="lg"
         footer={
@@ -269,6 +271,7 @@ export default function InventoryScreen() {
       >
         {editing && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {saveError && <p role="alert" className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</p>}
             <Field label="পণ্যের নাম / Product name" className="md:col-span-2">
               <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="যেমন / e.g. Miniket Rice 25kg" />
             </Field>

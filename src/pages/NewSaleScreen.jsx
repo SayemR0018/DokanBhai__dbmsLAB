@@ -27,6 +27,7 @@ export default function NewSaleScreen() {
   const [note, setNote] = useState('')
   const [showPicker, setShowPicker] = useState(null) // 'product' | 'customer' | null
   const [processing, setProcessing] = useState(false)
+  const [saleError, setSaleError] = useState('')
   const [receipt, setReceipt] = useState(null)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [cartSheetOpen, setCartSheetOpen] = useState(false)
@@ -191,6 +192,7 @@ export default function NewSaleScreen() {
       warrantyNote: i.warrantyNote || '',
     }))
     setProcessing(true)
+    setSaleError('')
     try {
       const invoice = await data.createSale({
         customer_id: customerId,
@@ -203,7 +205,7 @@ export default function NewSaleScreen() {
       setReceipt({ ...(invoice || {}), items, customer: customerId ? customer : null })
       setCartSheetOpen(false)
     } catch (err) {
-      alert('বিক্রয় সংরক্ষণ ব্যর্থ / Failed to save sale: ' + (err?.message || err))
+      setSaleError('বিক্রয় সংরক্ষণ ব্যর্থ / Failed to save sale: ' + (err?.message || err))
     } finally {
       setProcessing(false)
     }
@@ -464,6 +466,7 @@ export default function NewSaleScreen() {
                   <p className="text-lg font-bold text-emerald-700">{formatBDT(change > 0 ? change : effectivePaid)}</p>
                 </div>
               </div>
+              {saleError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saleError}</p>}
               <Button onClick={onCheckout} size="lg" className="w-full min-h-[48px]" disabled={processing || cart.length === 0}>
                 <CheckIcon size={18} /> {processing ? 'সংরক্ষণ হচ্ছে… / Saving…' : 'বিক্রয় সম্পন্ন / Complete sale'}
               </Button>
@@ -567,6 +570,7 @@ export default function NewSaleScreen() {
                     <p className={`text-lg font-bold ${bakiRequired ? 'text-red-600' : 'text-emerald-600'}`}>{formatBDT(bakiRequired ? due : effectivePaid)}</p>
                   </div>
                 </div>
+                {saleError && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{saleError}</p>}
                 <Button onClick={onCheckout} size="lg" className="w-full mt-3 min-h-[48px]" disabled={processing}>
                   <CheckIcon size={18} /> {processing ? 'সংরক্ষণ… / Saving…' : 'বিক্রয় সম্পন্ন / Complete sale'}
                 </Button>
