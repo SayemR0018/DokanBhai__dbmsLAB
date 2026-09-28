@@ -26,7 +26,7 @@ export default function LandingPage() {
       <SiteHeader />
       <main>
         <section className="relative overflow-hidden">
-          <div className="relative z-10 mx-auto flex min-h-[420px] w-[min(1160px,calc(100%-1.5rem))] items-center py-12">
+          <div className="relative z-10 mx-auto grid w-[min(1160px,calc(100%-1.5rem))] items-center gap-10 py-12 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="max-w-xl">
               <p className="w-fit rounded-full border border-[#c7f0df] bg-[#f2fcf8] px-3 py-1 text-xs font-semibold text-[#00815d]">স্মার্ট রিটেল ব্রেন ও ডিজিটাল মুদি সমাধান</p>
               <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">দোকান-ভাই</h1>
@@ -35,7 +35,6 @@ export default function LandingPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link to={appHref} className="inline-flex min-h-[44px] items-center rounded-xl bg-[#006b4f] px-5 font-semibold text-white">{user ? 'ড্যাশবোর্ডে যান' : 'নতুন একাউন্ট খুলুন'}</Link>
                 <Link to="/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#c7f0df] px-5 font-semibold text-[#006b4f]">লগ ইন করুন</Link>
-                <button type="button" onClick={startTour} className="inline-flex min-h-[44px] items-center rounded-xl border border-[#006b4f] bg-[#e8faf3] px-5 font-semibold text-[#006b4f]">দোকান ঘুরে দেখুন</button>
                 <Link to="/admin/login" className="inline-flex min-h-[44px] items-center rounded-xl border border-[#d9deea] px-5 font-semibold text-[#273246]">অ্যাডমিন লগইন</Link>
               </div>
               <div className="mt-8 grid max-w-lg grid-cols-3 gap-4 border-t border-[#e7ebef] pt-5 text-sm">
@@ -43,6 +42,12 @@ export default function LandingPage() {
                 <div><strong className="block text-lg text-[#006b4f]">POS</strong><span className="text-[#6f7b8d]">নগদ / বাকি</span></div>
                 <div><strong className="block text-lg text-[#d97706]">স্টক</strong><span className="text-[#6f7b8d]">কেজি ও পিস</span></div>
               </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <ShopFront />
+              <button type="button" onClick={startTour} className="mt-5 inline-flex min-h-[52px] items-center rounded-2xl bg-[#006b4f] px-8 text-lg font-bold text-white">
+                দোকান ঘুরে দেখুন
+              </button>
             </div>
           </div>
         </section>
@@ -83,6 +88,41 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+function ShopFront() {
+  return (
+    <div className="dokan-stage" aria-hidden="true">
+      <div className="dokan-roof" />
+      <div className="dokan-awning">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+      <div className="dokan-sign">দোকানভাই</div>
+      <div className="dokan-body">
+        <div className="dokan-window">
+          <div className="dokan-shelf">
+            <i className="box green" />
+            <i className="box yellow" />
+            <i className="box blue" />
+            <i className="box sack" />
+          </div>
+          <div className="dokan-shelf lower">
+            <i className="box sack" />
+            <i className="box green" />
+            <i className="box yellow" />
+          </div>
+        </div>
+        <div className="dokan-door">
+          <span className="knob" />
+        </div>
+      </div>
+      <div className="dokan-counter">
+        <span className="ledger" />
+        <span className="coin">৳</span>
+      </div>
+      <div className="dokan-tag"><span /></div>
     </div>
   )
 }

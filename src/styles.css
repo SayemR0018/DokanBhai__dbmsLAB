@@ -14,6 +14,207 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dokan-stage {
+  position: relative;
+  width: min(100%, 460px);
+  height: 420px;
+  margin: 0 auto;
+}
+.dokan-roof {
+  position: absolute;
+  left: 36px;
+  right: 36px;
+  top: 18px;
+  height: 36px;
+  background: #062035;
+  clip-path: polygon(8% 100%, 50% 0, 92% 100%);
+}
+.dokan-awning {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  top: 78px;
+  height: 42px;
+  display: flex;
+  border-radius: 4px 4px 10px 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 0 #04543c;
+  animation: awningDrop 3.2s ease-in-out infinite;
+  transform-origin: top center;
+}
+.dokan-awning span {
+  flex: 1;
+  background: #006b4f;
+}
+.dokan-awning span:nth-child(odd) { background: #12a37a; }
+.dokan-sign {
+  position: absolute;
+  left: 50%;
+  top: 128px;
+  transform: translateX(-50%);
+  background: #e8faf3;
+  color: #006b4f;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  padding: 6px 18px;
+  border-radius: 999px;
+  z-index: 2;
+}
+.dokan-body {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  top: 156px;
+  height: 176px;
+  background: #f7fbf9;
+  border: 3px solid #062035;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  overflow: hidden;
+}
+.dokan-window {
+  flex: 1.4;
+  background: #fff;
+  border-right: 3px solid #062035;
+  padding: 36px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dokan-shelf {
+  height: 46px;
+  background: #d7efe4;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 8px 6px;
+}
+.dokan-shelf .box {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  animation: boxBob 2.6s ease-in-out infinite;
+}
+.dokan-shelf .box:nth-child(2) { animation-delay: .2s; height: 34px; }
+.dokan-shelf .box:nth-child(3) { animation-delay: .45s; }
+.dokan-shelf .box:nth-child(4) { animation-delay: .15s; width: 34px; }
+.box.green { background: #006b4f; }
+.box.yellow { background: #f5c451; }
+.box.blue { background: #7d8cff; }
+.box.sack { background: #c4a574; border-radius: 40% 40% 8px 8px; }
+.dokan-door {
+  flex: 0.7;
+  background: #e7f6ef;
+  position: relative;
+}
+.dokan-door::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 18px;
+  bottom: 28px;
+  background: #b7e4d2;
+  border-radius: 40px 40px 6px 6px;
+  border: 3px solid #062035;
+}
+.dokan-door .knob {
+  position: absolute;
+  left: 18px;
+  top: 58%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f5c451;
+  z-index: 1;
+}
+.dokan-counter {
+  position: absolute;
+  left: 52px;
+  right: 52px;
+  bottom: 28px;
+  height: 28px;
+  background: #062035;
+  border-radius: 6px;
+  z-index: 3;
+}
+.dokan-counter .ledger {
+  position: absolute;
+  left: 16px;
+  top: -18px;
+  width: 42px;
+  height: 28px;
+  background: #fff;
+  border: 2px solid #006b4f;
+  border-radius: 2px;
+}
+.dokan-counter .ledger::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 8px;
+  height: 2px;
+  background: #8bc6b4;
+  box-shadow: 0 5px 0 #8bc6b4, 0 10px 0 #8bc6b4;
+}
+.dokan-counter .coin {
+  position: absolute;
+  right: 28px;
+  top: -22px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5c451;
+  color: #062035;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  animation: coinSlide 3.4s ease-in-out infinite;
+}
+.dokan-tag {
+  position: absolute;
+  left: 18px;
+  top: 150px;
+  width: 2px;
+  height: 28px;
+  background: #062035;
+  transform-origin: top center;
+  animation: tagSwing 2.2s ease-in-out infinite;
+}
+.dokan-tag span {
+  position: absolute;
+  left: -14px;
+  top: 24px;
+  width: 30px;
+  height: 40px;
+  background: #fff;
+  border: 3px solid #006b4f;
+  border-radius: 3px;
+}
+@keyframes awningDrop {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.04); }
+}
+@keyframes boxBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes coinSlide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-36px); }
+}
+@keyframes tagSwing {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dokan-awning, .dokan-shelf .box, .dokan-counter .coin, .dokan-tag { animation: none; }
+}
+
 .shop-page h1 {
   font-size: 1.6rem;
   line-height: 1.15;
