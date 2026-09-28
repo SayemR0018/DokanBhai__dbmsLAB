@@ -10,6 +10,7 @@
 
 import { getBusinessType } from './verticals'
 import { isDemoMode, getDemoProfile } from './hardwareDemo'
+import { getSupabase, isSupabaseConfigured, setShopPhone } from './supabaseClient'
 
 let currentPhone = ''
 
@@ -115,6 +116,50 @@ export function updateProfile(patch) {
     window.dispatchEvent(new CustomEvent('dokanbhai:profilechange'))
   }
   return next
+}
+
+// Pull the signed-in shop name and owner from Postgres into this device,
+// so the sidebar shows the dokan that is actually logged in.
+export async function syncShopFromCloud(phone) {
+  const clean = (phone || '').replace(/\D/g, '')
+  if (!clean || isDemoMode() || !isSupabaseConfigured) return getProfile()
+  const supabase = getSupabase()
+  if (!supabase) return getProfile()
+  setShopPhone(clean)
+  const [{ data: biz }, { data: dp }] = await Promise.all([
+    supabase.from('businesses').select('name, business_type, address').eq('phone', clean).maybeSingle(),
+    supabase.from('dokan_profile').select('store_name, owner_name, region, business_type').eq('session_phone', clean).maybeSingle(),
+  ])
+  const storeName = (dp?.store_name || biz?.name || '').trim()
+  const ownerName = (dp?.owner_name || '').trim()
+  const region = (dp?.region || biz?.address || '').trim()
+  const businessType = dp?.business_type || biz?.business_type || 'mudi'
+  const bizType = getBusinessType(businessType) || getBusinessType('mudi')
+  if (!storeName && !ownerName) return getProfile()
+
+  const existing = getProfile()
+  if (!existing) {
+    return setProfile({
+      storeName: storeName || 'My Dokan',
+      ownerName: ownerName || 'Owner',
+      region,
+      businessType: bizType.key,
+      phone: clean,
+    })
+  }
+  return updateProfile({
+    store: {
+      ...(storeName ? { name: storeName } : {}),
+      ...(ownerName ? { ownerName } : {}),
+      ...(region ? { region } : {}),
+      businessType: bizType.key,
+      businessLabel: bizType.label,
+    },
+    session: {
+      phone: clean,
+      ...(ownerName ? { displayName: ownerName } : {}),
+    },
+  })
 }
 
 export function clearProfile() {

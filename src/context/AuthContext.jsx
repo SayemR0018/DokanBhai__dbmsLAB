@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getSupabase, isSupabaseConfigured, setAdminEmail } from '../lib/supabaseClient'
-import { getProfile } from '../lib/dokanProfile'
+import { getProfile, syncShopFromCloud } from '../lib/dokanProfile'
 import { setCurrentPhone as setDataPhone } from '../lib/data'
 import { setCurrentPhone as setProfilePhone } from '../lib/dokanProfile'
 import { setCurrentPhone as setLocalDbPhone } from '../lib/localDb'
@@ -105,7 +105,9 @@ export function AuthProvider({ children }) {
       setUser(adminUser)
     } else if (stored) {
       applyTenantScope(stored.phone)
-      const u = buildUser(stored.phone, getProfile())
+      let profile = getProfile()
+      try { profile = await syncShopFromCloud(stored.phone) || profile } catch { /* keep the device copy */ }
+      const u = buildUser(stored.phone, profile)
       setUser(u)
       notifyTenantSwitch()
     } else if (adminUser) {
@@ -129,7 +131,7 @@ export function AuthProvider({ children }) {
 
 
     applyTenantScope(cleanPhone)
-    const profile = getProfile()
+    let profile = getProfile()
     const expectedLocal = (profile?.session?.phone || '').replace(/\D/g, '')
     let matched = expectedLocal && expectedLocal === cleanPhone
 
@@ -158,6 +160,7 @@ export function AuthProvider({ children }) {
       }
     }
 
+    try { profile = await syncShopFromCloud(cleanPhone) || profile } catch { /* device profile still works */ }
     const u = buildUser(cleanPhone, profile)
     setUser(u)
     persist(u)

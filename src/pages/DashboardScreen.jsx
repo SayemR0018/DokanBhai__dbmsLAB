@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import data from '../lib/data'
 import { useProfile } from '../context/ProfileContext'
 import { formatBDT, formatDate, daysAgo, initials, avatarColor } from '../lib/format'
-import { Card, Badge, EmptyState, Spinner } from '../components/ui'
+import { Card, Badge, EmptyState, Spinner, Button, Modal } from '../components/ui'
+import { importLedgerFile } from '../lib/ledgerImport'
+import { isDemoMode } from '../lib/hardwareDemo'
 import {
   CartIcon, PackageIcon, ChevronRightIcon,
 } from '../components/icons'
@@ -45,8 +47,9 @@ function useDashboardData() {
 }
 
 export default function DashboardScreen() {
-  const { loading, transactions, products, customers, invoices, businesses } = useDashboardData()
+  const { loading, transactions, products, customers, invoices, businesses, reload } = useDashboardData()
   const { profile } = useProfile()
+  const [importOpen, setImportOpen] = useState(false)
 
   const stats = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -103,9 +106,12 @@ export default function DashboardScreen() {
           <h1>আজকের খাতা</h1>
           <p className="text-sm text-[#526176] mt-1">{bizName}</p>
         </div>
-        <Link to="/pos" className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#006b4f] px-4 text-sm font-semibold text-white">
-          <CartIcon size={18} /> বিক্রি
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>আগের হিসাব আনুন</Button>
+          <Link to="/pos" className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#006b4f] px-4 text-sm font-semibold text-white">
+            <CartIcon size={18} /> বিক্রি
+          </Link>
+        </div>
       </div>
 
       <section className="rounded-3xl bg-[#062035] text-white p-5">
@@ -230,6 +236,76 @@ export default function DashboardScreen() {
           </div>
         )}
       </Card>
+      <ImportLedgerModal open={importOpen} onClose={() => setImportOpen(false)} onDone={reload} />
     </div>
+  )
+}
+
+function ImportLedgerModal({ open, onClose, onDone }) {
+  const [file, setFile] = useState(null)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  const close = () => {
+    setFile(null)
+    setError('')
+    setResult(null)
+    setBusy(false)
+    onClose()
+  }
+
+  const run = async () => {
+    if (!file) return
+    setBusy(true)
+    setError('')
+    setResult(null)
+    try {
+      const summary = await importLedgerFile(file)
+      setResult(summary)
+      onDone()
+    } catch (err) {
+      setError(err?.message || 'ফাইল যোগ করা যায়নি।')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={close}
+      title="আগের হিসাব আনুন / Import previous data"
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={close}>বন্ধ</Button>
+          <Button onClick={run} disabled={!file || busy || isDemoMode()}>{busy ? 'সেভ হচ্ছে…' : 'ডাটাবেসে সেভ করুন'}</Button>
+        </div>
+      }
+    >
+      <div className="space-y-3 text-sm text-[#243246]">
+        <p>CSV বা Excel (.xlsx) দিন। যে খাতার সারি আছে শুধু সেটা সেভ হবে। ফাঁকা ঘর আগের মান বদলায় না। ভুল বা নষ্ট ফাইল কিছুই যোগ করে না।</p>
+        <ul className="list-disc space-y-1 pl-5 text-[#526176]">
+          <li>Excel শিটের নাম: products, customers, vendors, categories</li>
+          <li>অথবা CSV-তে section কলাম: product / customer / vendor / category</li>
+          <li>পণ্য: name, category, vendor, cost_price, sale_price, stock, min_stock, unit</li>
+          <li>কাস্টমার: name, phone, address, note, balance</li>
+        </ul>
+        {isDemoMode() && <p className="rounded-xl bg-amber-50 px-3 py-2 text-amber-800">ট্যুরে এই হিসাব সেভ হয় না।</p>}
+        <input
+          type="file"
+          accept=".csv,.xlsx,.xls,text/csv"
+          onChange={(e) => { setFile(e.target.files?.[0] || null); setError(''); setResult(null) }}
+          className="block w-full text-sm"
+        />
+        {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700">{error}</p>}
+        {result && (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+            সেভ হয়েছে — পণ্য {result.products}, কাস্টমার {result.customers}, সরবরাহকারী {result.vendors}, ক্যাটাগরি {result.categories}
+          </p>
+        )}
+      </div>
+    </Modal>
   )
 }

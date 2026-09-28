@@ -37,6 +37,9 @@ export default function AppShell({ children }) {
   const location = useLocation()
 
   const storeName = profile?.store?.name || 'DokanBhai'
+  const ownerName = profile?.store?.ownerName && profile.store.ownerName !== 'Owner'
+    ? profile.store.ownerName
+    : (user?.name && user.name !== 'Owner' ? user.name : '')
   const biz = getBusinessType(profile?.store?.businessType)
 
   // Single source of truth for the logout flow — used by the sidebar, the
@@ -91,13 +94,13 @@ export default function AppShell({ children }) {
 
   return (
     <div className="shop-app h-screen flex bg-[#e7eeea]">
-      <aside className="hidden md:flex w-[240px] bg-[#062035] text-white flex-col">
-        <div className="px-5 py-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <Logo className="h-10 w-10" />
-            <div>
-              <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
-              <p className="text-sm font-bold truncate max-w-[150px]">{storeName}</p>
+      <aside className="hidden md:flex w-[300px] bg-[#062035] text-white flex-col">
+        <div className="px-4 py-4 border-b border-white/10">
+          <div className="flex items-start gap-3">
+            <Logo className="mt-0.5 h-11 w-11 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold tracking-wide text-[#8bc6b4]">দোকানভাই</p>
+              <p className="mt-0.5 text-base font-bold leading-snug break-words">{storeName}</p>
             </div>
           </div>
           {biz && (
@@ -110,12 +113,12 @@ export default function AppShell({ children }) {
         {nav()}
         <div className="p-3 border-t border-white/10 space-y-2">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/10">
-            <div className="w-9 h-9 rounded-full bg-[#006b4f] text-white flex items-center justify-center text-sm font-bold">
-              {initials(user?.name || user?.phone || 'U')}
+            <div className="w-9 h-9 shrink-0 rounded-full bg-[#006b4f] text-white flex items-center justify-center text-sm font-bold">
+              {initials(ownerName || user?.phone || 'U')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{user?.name || user?.phone}</p>
-              <p className="text-xs text-white/60 truncate">{user?.phone || 'দোকানদার'}</p>
+              <p className="text-sm font-semibold leading-snug break-words">{ownerName || 'দোকানদার'}</p>
+              <p className="text-xs text-white/60 truncate">{user?.phone || ''}</p>
             </div>
           </div>
           <Button
@@ -137,11 +140,12 @@ export default function AppShell({ children }) {
           <div className="absolute inset-0 bg-steel-900/50" onClick={() => setOpen(false)}></div>
           <aside className="relative w-[min(100%,280px)] bg-[#062035] text-white flex flex-col">
             <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <Logo className="h-10 w-10" />
-                <div className="min-w-0">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <Logo className="h-10 w-10 shrink-0" />
+                <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
-                  <p className="text-sm font-bold truncate">{storeName}</p>
+                  <p className="text-sm font-bold leading-snug break-words">{storeName}</p>
+                  {ownerName && <p className="text-[11px] text-white/70 break-words">{ownerName}</p>}
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10"><XIcon size={18} /></button>
@@ -171,9 +175,9 @@ export default function AppShell({ children }) {
           <button onClick={() => setOpen(true)} className="min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10" title="মেনু / Menu">
             <MenuIcon size={20} />
           </button>
-          <div className="min-w-0 text-center">
-            <p className="text-sm font-bold truncate">{storeName}</p>
-            {biz && <p className="text-[11px] text-[#8bc6b4] truncate">{biz.label}</p>}
+          <div className="min-w-0 flex-1 text-center">
+            <p className="text-sm font-bold leading-snug break-words">{storeName}</p>
+            <p className="text-[11px] text-[#8bc6b4] break-words">{ownerName || biz?.label || ''}</p>
           </div>
           <button
             onClick={handleSignOut}
