@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import Logo from '../../components/Logo'
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('')
@@ -39,9 +40,7 @@ export default function AdminLogin() {
           <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-7 text-white">
             <div className="flex items-center gap-4">
 
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-2xl">
-                🛡️
-              </div>
+              <Logo className="h-14 w-14" />
 
               <div>
                 <p className="text-sm text-blue-100">

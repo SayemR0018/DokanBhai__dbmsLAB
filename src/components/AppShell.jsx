@@ -9,6 +9,7 @@ import { getBusinessType } from '../lib/verticals'
 import localDb from '../lib/localDb'
 import { Button, Modal, Field, Input } from './ui'
 import BusinessTypeChips from './BusinessTypeChips'
+import Logo from './Logo'
 import {
   DashboardIcon, PackageIcon, CartIcon, UsersIcon, TruckIcon,
   TagIcon, LogOutIcon, MoneyIcon, ReceiptIcon, XIcon, PhoneIcon,
@@ -92,7 +93,7 @@ export default function AppShell({ children }) {
       <aside className="hidden md:flex w-[240px] bg-[#062035] text-white flex-col">
         <div className="px-5 py-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#006b4f] text-white flex items-center justify-center font-black">D</div>
+            <Logo className="h-10 w-10" />
             <div>
               <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
               <p className="text-sm font-bold truncate max-w-[150px]">{storeName}</p>
@@ -136,7 +137,7 @@ export default function AppShell({ children }) {
           <aside className="relative w-[min(100%,280px)] bg-[#062035] text-white flex flex-col">
             <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#006b4f] text-white flex items-center justify-center font-black">D</div>
+                <Logo className="h-10 w-10" />
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-[#8bc6b4]">দোকানভাই</p>
                   <p className="text-sm font-bold truncate">{storeName}</p>

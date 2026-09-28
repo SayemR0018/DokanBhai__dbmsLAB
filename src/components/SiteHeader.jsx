@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import Logo from './Logo'
 
 export default function SiteHeader({ cta = 'register' }) {
   const [open, setOpen] = useState(false)
@@ -9,7 +10,7 @@ export default function SiteHeader({ cta = 'register' }) {
     <header className="sticky top-0 z-50 h-16 border-b border-[#edf0f2] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-full w-[min(1160px,calc(100%-1.5rem))] items-center gap-4">
         <Link to="/" onClick={close} className="flex items-center gap-2 shrink-0">
-          <span className="grid h-9 w-9 place-items-center rounded-[9px] bg-[#006b4f] text-sm font-black text-white">D</span>
+          <Logo className="h-9 w-9" />
           <span>
             <span className="block font-extrabold leading-none tracking-tight text-[#091020]">DOKANBHAI</span>
             <span className="mt-0.5 block text-[9px] font-bold text-[#006b4f]">দোকানভাই</span>

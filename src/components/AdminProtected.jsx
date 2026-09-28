@@ -1,5 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
 
 export default function AdminProtected({ children }) {
   const { user, loading, signOut } = useAuth()
@@ -29,7 +30,10 @@ export default function AdminProtected({ children }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-        <p className="text-sm font-bold text-slate-800">দোকানভাই অ্যাডমিন / Admin</p>
+        <p className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <Logo className="h-8 w-8" />
+          দোকানভাই অ্যাডমিন / Admin
+        </p>
         <button
           type="button"
           onClick={logout}
