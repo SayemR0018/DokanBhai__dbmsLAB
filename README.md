@@ -8,8 +8,12 @@ Live site: [https://dokanbhai.vercel.app](https://dokanbhai.vercel.app)
 
 | File | What it is |
 |------|------------|
-| [`../DokanBhai.sql`](../DokanBhai.sql) | Tables, `create_sale`, `record_payment`, and row security. Run this first. |
-| [`../seed.sql`](../seed.sql) | One hardware demo shop you can sign into. Run this second, only if you want that shop. |
+| [`DokanBhai.sql`](DokanBhai.sql) | Tables, `create_sale`, `record_payment`, and row security. Run this first. |
+| [`seed.sql`](seed.sql) | One hardware demo shop you can sign into. Run this second, only if you want that shop. |
+| [`feature.md`](feature.md) | Feature matrix and module specification. |
+| [`analysis.md`](analysis.md) | Architecture, schema notes, and DBMS analysis. |
+| [`future_plans.md`](future_plans.md) | Product roadmap. |
+| [`../DokanBhai-audit.md`](../DokanBhai-audit.md) | Audit of the app, SQL, and live deployment. |
 | [`public/dokanbhai-demo-import.csv`](public/dokanbhai-demo-import.csv) | A small CSV for the dashboard import button. |
 
 ---
@@ -120,7 +124,7 @@ Use this when you want to click around without creating a shop.
 
 ### 2. Database demo shop (`seed.sql`)
 
-[`../seed.sql`](../seed.sql) inserts the same hardware shop into Postgres so you can sign in for real:
+[`seed.sql`](seed.sql) inserts the same hardware shop into Postgres so you can sign in for real:
 
 | | |
 |--|--|
@@ -209,7 +213,7 @@ New text ids are generated in the app (`p-…`, `c-…`, `v-…`, `cat-…`). Th
 
 ## Tables
 
-Full definitions, indexes, triggers, and policies are in [`../DokanBhai.sql`](../DokanBhai.sql). The short map:
+Full definitions, indexes, triggers, and policies are in [`DokanBhai.sql`](DokanBhai.sql). The short map:
 
 | Table | Role |
 |-------|------|
@@ -270,8 +274,8 @@ Without the two env vars, the app keeps an empty ledger in `localStorage` under 
 ## Database setup
 
 1. Create a Supabase project.
-2. Open the SQL editor and run all of [`../DokanBhai.sql`](../DokanBhai.sql).
-3. Optional: run [`../seed.sql`](../seed.sql) to create the hardware demo shop.
+2. Open the SQL editor and run all of [`DokanBhai.sql`](DokanBhai.sql).
+3. Optional: run [`seed.sql`](seed.sql) to create the hardware demo shop.
 4. In **Project Settings → API**, copy the project URL and the anon public key into `.env`.
 5. Restart `npm run dev`.
 
@@ -377,8 +381,12 @@ DokanVy_webapp/
 ├── vercel.json
 └── package.json
 
-../DokanBhai.sql                     # Canonical schema
-../seed.sql                          # Demo hardware shop
+DokanBhai.sql                        # Canonical schema
+seed.sql                             # Demo hardware shop
+feature.md                           # Feature matrix
+analysis.md                          # DBMS analysis
+future_plans.md                      # Roadmap
+../DokanBhai-audit.md                # Audit
 ```
 
 ---
