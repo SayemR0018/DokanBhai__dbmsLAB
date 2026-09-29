@@ -207,6 +207,22 @@ export const localDb = {
     const saleDate = date || new Date().toISOString()
     const tenantStamp = currentPhone ? { phone: currentPhone } : {}
 
+    const needed = new Map()
+    for (const it of lineItems) {
+      const qty = Number(it.qty)
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error('পরিমাণ সঠিক নয় / Quantity must be greater than zero')
+      }
+      needed.set(it.product_id, (needed.get(it.product_id) || 0) + qty)
+    }
+    for (const [id, qty] of needed) {
+      const product = (db.products || []).find((row) => row.id === id)
+      const stock = Number(product?.stock || 0)
+      if (!product || qty > stock + 1e-6) {
+        throw new Error(`${product?.name || 'পণ্য'}: স্টকে ${stock} আছে, ${qty} বিক্রি করা যাবে না / Not enough stock`)
+      }
+    }
+
     let remainingPaid = paid
     lineItems.forEach((it, idx) => {
       const isLast = idx === lineItems.length - 1
@@ -234,8 +250,8 @@ export const localDb = {
         date: saleDate,
         ...tenantStamp,
       })
-      const p = (db.products || []).find((p) => p.id === it.product_id)
-      if (p) p.stock = Math.max(0, (p.stock || 0) - Number(it.qty))
+      const p = (db.products || []).find((row) => row.id === it.product_id)
+      if (p) p.stock = Number(p.stock) - Number(it.qty)
     })
 
     if (paid > 0 || discount > 0) {
@@ -285,6 +301,12 @@ export const localDb = {
   },
   recordPayment({ customer_id, amount, note = '', date }) {
     const amt = Number(amount || 0)
+    if (!Number.isFinite(amt) || amt <= 0) throw new Error('জমার পরিমাণ দিন / Enter a payment amount')
+    const cust = customer_id ? (db.customers || []).find((row) => row.id === customer_id) : null
+    if (!cust) throw new Error('কাস্টমার পাওয়া যায়নি / Customer was not found')
+    if (amt > Number(cust.balance || 0) + 0.009) {
+      throw new Error(`বাকি ${Number(cust.balance || 0)} টাকা। তার বেশি জমা হবে না / Payment cannot exceed the due`)
+    }
     const tenantStamp = currentPhone ? { phone: currentPhone } : {}
     const payment = {
       id: uid('pay'),
@@ -298,10 +320,7 @@ export const localDb = {
       ...tenantStamp,
     }
     if (customer_id) {
-      const cust = (db.customers || []).find((c) => c.id === customer_id)
-      if (cust) {
-        cust.balance = Math.max(0, (cust.balance || 0) - amt)
-      }
+      cust.balance = Math.max(0, Number(cust.balance || 0) - amt)
     }
     withNotified((d) => { d.transactions = [...(d.transactions || []), payment] })
     return payment

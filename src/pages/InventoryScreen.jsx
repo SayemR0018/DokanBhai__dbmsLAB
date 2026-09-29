@@ -81,17 +81,26 @@ export default function InventoryScreen() {
     if (!editing.name?.trim()) return
     setSaving(true)
     setSaveError('')
+    const stock = Number(editing.stock || 0)
+    const minStock = Number(editing.min_stock || 0)
+    const cost = Number(editing.cost_price || 0)
+    const sale = Number(editing.sale_price || 0)
+    if ([stock, minStock, cost, sale].some((n) => !Number.isFinite(n) || n < 0)) {
+      setSaveError('দাম বা স্টক ঋণাত্মক হতে পারে না / Price and stock cannot be negative')
+      setSaving(false)
+      return
+    }
     const payload = {
       name: editing.name.trim(),
       category_id: editing.category_id || null,
       vendor_id: editing.vendor_id || null,
       cost_price: Number(editing.cost_price || 0),
       sale_price: Number(editing.sale_price || 0),
-      stock: Number(editing.stock || 0),
-      min_stock: Number(editing.min_stock || 0),
+      stock: stock,
+      min_stock: minStock,
       unit: editing.unit || 'pcs',
       serial_tracked: !!editing.serialTracked,
-      warranty_months: Number(editing.warrantyMonths || 0),
+      warranty_months: Math.max(0, Number(editing.warrantyMonths || 0)),
       note: editing.note || '',
     }
     try {

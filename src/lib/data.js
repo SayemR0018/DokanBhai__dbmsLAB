@@ -194,9 +194,31 @@ export const data = {
 
   // ----- Sales / Payments -----
   async createSale(payload) {
+    const items = Array.isArray(payload?.items) ? payload.items : []
+    if (!items.length) throw new Error('কার্ট খালি / Cart is empty')
+    const products = await this.list('products')
+    const needed = new Map()
+    for (const it of items) {
+      const qty = Number(it.qty)
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error('পরিমাণ সঠিক নয় / Quantity must be greater than zero')
+      }
+      if (!it.product_id) throw new Error('পণ্য বাছাই করুন / Choose a product')
+      needed.set(it.product_id, (needed.get(it.product_id) || 0) + qty)
+    }
+    for (const [id, qty] of needed) {
+      const product = products.find((row) => row.id === id)
+      const stock = Number(product?.stock || 0)
+      const name = product?.name || 'পণ্য'
+      if (!product || qty > stock + 1e-6) {
+        throw new Error(`${name}: স্টকে ${stock} আছে, ${qty} বিক্রি করা যাবে না / Not enough stock`)
+      }
+    }
     const payloadClean = { ...payload }
     delete payloadClean.phone
     delete payloadClean.session_phone
+    payloadClean.discount = Math.max(0, Number(payloadClean.discount || 0))
+    payloadClean.paid_amount = Math.max(0, Number(payloadClean.paid_amount || 0))
     if (!isDemoMode() && currentPhone && !payloadClean.business_id) payloadClean.business_id = currentPhone
     if (isDemoMode() || !isSupabaseConfigured) return localDb.createSale(payloadClean)
     const supabase = getSupabase()
@@ -206,7 +228,19 @@ export const data = {
   },
 
   async recordPayment(payload) {
-    const payment = { ...payload }
+    const amount = Number(payload?.amount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error('জমার পরিমাণ দিন / Enter a payment amount')
+    }
+    if (!payload?.customer_id) throw new Error('কাস্টমার বাছাই করুন / Choose a customer')
+    const customers = await this.list('customers')
+    const customer = customers.find((row) => row.id === payload.customer_id)
+    const due = Number(customer?.balance || 0)
+    if (!customer) throw new Error('কাস্টমার পাওয়া যায়নি / Customer was not found')
+    if (amount > due + 0.009) {
+      throw new Error(`বাকি ${due} টাকা। তার বেশি জমা হবে না / Payment cannot exceed the due`)
+    }
+    const payment = { ...payload, amount }
     if (!isDemoMode() && currentPhone && !payment.business_id) payment.business_id = currentPhone
     if (isDemoMode() || !isSupabaseConfigured) return localDb.recordPayment(payment)
     const supabase = getSupabase()

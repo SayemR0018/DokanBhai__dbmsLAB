@@ -82,17 +82,17 @@ export default function NewSaleScreen() {
     const stock = Number(p.stock || 0)
     const salePrice = Number(p.sale_price || 0)
     if (!Number.isFinite(stock) || stock <= 0) return
+    const step = stepFor(p.unit)
+    if (!Number.isFinite(step) || step <= 0 || stock + 1e-9 < step) return
     setCart((c) => {
       const existing = c.find((i) => i.product_id === p.id)
       if (existing) {
-        const step = stepFor(existing.unit)
         const candidate = roundQty(Number(existing.qty || 0) + step, existing.unit)
-        if (!Number.isFinite(candidate) || candidate > stock) return c
-        return c.map((i) => i.product_id === p.id ? { ...i, qty: candidate } : i)
+        if (!Number.isFinite(candidate) || candidate > stock + 1e-9) return c
+        return c.map((i) => i.product_id === p.id ? { ...i, qty: candidate, stock } : i)
       }
-      // Initial qty respects the unit's step (1 for pcs, 0.001 for kg, etc.)
-      // so we never start the cart with a fractional piece.
-      const initialQty = roundQty(stepFor(p.unit), p.unit)
+      const initialQty = roundQty(step, p.unit)
+      if (!Number.isFinite(initialQty) || initialQty <= 0 || initialQty > stock + 1e-9) return c
       return [...c, {
         product_id: p.id,
         name: p.name,
@@ -175,7 +175,17 @@ export default function NewSaleScreen() {
   }
 
   const onCheckout = async () => {
-    if (cart.length === 0) { alert('কার্ট খালি / Cart is empty'); return }
+    if (cart.length === 0) { setSaleError('কার্ট খালি / Cart is empty'); return }
+    const over = cart.find((line) => Number(line.qty) > Number(line.stock || 0) + 1e-6)
+    if (over) {
+      setSaleError(`${over.name}: স্টকে ${over.stock} আছে, ${over.qty} বিক্রি করা যাবে না / Not enough stock`)
+      return
+    }
+    const missingSerial = cart.find((line) => line.serialTracked && !String(line.serialNumber || '').trim())
+    if (missingSerial) {
+      setSaleError(`${missingSerial.name}: সিরিয়াল নম্বর দিন / Enter a serial number`)
+      return
+    }
     const customerId = saleCustomerId()
     // Baki, or any unpaid balance, needs a real customer. Walk-in stays null.
     if (bakiRequired && !customerId) {
@@ -197,8 +207,8 @@ export default function NewSaleScreen() {
       const invoice = await data.createSale({
         customer_id: customerId,
         items,
-        discount: Number(discount || 0),
-        paid_amount: Number(effectivePaid || 0),
+        discount: Math.max(0, Number(discount || 0)),
+        paid_amount: Math.max(0, Number(effectivePaid || 0)),
         pay_type: payType,
         note: note || '',
       })
